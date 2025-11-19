@@ -19,19 +19,20 @@ endif()
 
 # Find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(pcl REQUIRED)
+find_package(PCL 1.14 REQUIRED)
+find_package(pcl_conversions REQUIRED)
 
-# DUA Node library configuration
-add_library(dua_pcl SHARED
-  src/dua_pcl.cpp)
-add_library(dua_pcl::dua_pcl ALIAS dua_pcl)
-target_compile_features(dua_pcl PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_compile_definitions(dua_pcl PRIVATE "DUA_PCL_BUILDING_LIBRARY")
-target_include_directories(dua_pcl PUBLIC
+# DUA PCL library configuration
+add_library(dua_pcl INTERFACE)
+target_compile_features(dua_pcl INTERFACE c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_definitions(dua_pcl INTERFACE "DUA_PCL_BUILDING_LIBRARY")
+target_include_directories(dua_pcl INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
-ament_target_dependencies(dua_pcl
-  pcl)
+target_link_libraries(dua_pcl INTERFACE
+  ${PCL_LIBRARIES})
+ament_target_dependencies(dua_pcl INTERFACE
+  pcl_conversions)
 
 # Library installation
 install(
@@ -40,9 +41,6 @@ install(
 install(
   TARGETS dua_pcl
   EXPORT export_${PROJECT_NAME}
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
   INCLUDES DESTINATION include)
 
 if(BUILD_TESTING)
@@ -58,8 +56,9 @@ if(BUILD_TESTING)
 endif()
 
 # Export all dependencies and library targets for this package
-ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
+ament_export_targets(export_${PROJECT_NAME})
 ament_export_dependencies(
-  pcl)
+  PCL 1.14
+  pcl_conversions)
 
 ament_package()
