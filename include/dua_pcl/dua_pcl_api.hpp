@@ -38,69 +38,109 @@ namespace dua_pcl
 
 template<typename PointT>
 void DUA_PCL_PUBLIC preprocess_cloud(
-  pcl::PointCloud<PointT> & cloud,
+  typename pcl::PointCloud<PointT>::Ptr cloud,
   const PreprocessParams & params)
 {
-  bool do_clean = cloud.is_dense == false;
-  bool do_transform = params.transform_params.do_transform;
-  bool do_crop_sphere = params.crop_sphere_params.do_crop_sphere;
-  bool do_crop_angular = params.crop_angular_params.do_crop_angular;
-  bool do_crop_box = params.crop_box_params.do_crop_box;
-  bool do_remove_ground = params.ground_params.do_remove_ground;
-  bool do_downsample = params.downsample_params.do_downsample;
+  if (!cloud || cloud->empty()) {
+    return;
+  }
+
+  const bool do_clean = !cloud->is_dense;
+
+  const bool do_crop_sphere = params.crop_sphere_params.do_crop_sphere;
+  const float min_radius = params.crop_sphere_params.min_radius;
+  const float max_radius = params.crop_sphere_params.max_radius;
+  const float min_radius_sq = min_radius * min_radius;
+  const float max_radius_sq = max_radius * max_radius;
+
+  const bool do_crop_box = params.crop_box_params.do_crop_box;
+  const float box_len_x = params.crop_box_params.len_x;
+  const float box_len_y = params.crop_box_params.len_y;
+  const float box_len_z = params.crop_box_params.len_z;
+
+  const bool do_crop_angular = params.crop_angular_params.do_crop_angular;
+  const float min_elev = params.crop_angular_params.min_elevation_angle;
+  const float max_elev = params.crop_angular_params.max_elevation_angle;
+  const float min_azim = params.crop_angular_params.min_azimuth_angle;
+  const float max_azim = params.crop_angular_params.max_azimuth_angle;
+
+  const bool do_transform = params.transform_params.do_transform;
+  Eigen::Matrix3f R;
+  Eigen::Vector3f t;
+  if (do_transform) {
+    Eigen::Matrix4f T = params.transform_params.transform.matrix().cast<float>();
+    R = T.block<3, 3>(0, 0);
+    t = T.block<3, 1>(0, 3);
+  }
+
+  const bool do_downsample = params.downsample_params.do_downsample;
+  const float leaf_size = params.downsample_params.leaf_size;
+  const size_t min_points_per_voxel = params.downsample_params.min_points_per_voxel;
 
   size_t idx = 0;
-  for (auto & point : cloud.points) {
-    Eigen::Vector3d pt(point.x, point.y, point.z);
-    Eigen::Vector3d pt_transformed;
+  for (const auto & point : cloud->points) {
+    const float x = point.x;
+    const float y = point.y;
+    const float z = point.z;
 
     if (do_clean) {
-      if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
+      if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)) {
         continue;
       }
-    }
-
-    if (do_transform) {
-      pt_transformed = params.transform_params.transform * pt;
-    } else {
-      pt_transformed = pt;
     }
 
     if (do_crop_sphere) {
-      double dist_sq = pt.squaredNorm();
-      if (dist_sq < params.crop_sphere_params.min_radius * params.crop_sphere_params.min_radius ||
-          dist_sq > params.crop_sphere_params.max_radius * params.crop_sphere_params.max_radius) {
-        continue;
-      }
-    }
-
-    if (do_crop_angular) {
-      double elevation = std::atan2(point.z, std::sqrt(point.x * point.x + point.y * point.y)) * 180.0 / M_PI;
-      double azimuth = std::atan2(point.y, point.x) * 180.0f / M_PI;
-
-      if (elevation < params.crop_angular_params.min_elevation_angle ||
-          elevation > params.crop_angular_params.max_elevation_angle ||
-          azimuth < params.crop_angular_params.min_azimuth_angle ||
-          azimuth > params.crop_angular_params.max_azimuth_angle) {
+      const float radius_sq = x * x + y * y + z * z;
+      if (radius_sq < min_radius_sq || radius_sq > max_radius_sq) {
         continue;
       }
     }
 
     if (do_crop_box) {
-      if (std::abs(point.x) > params.crop_box_params.len_x ||
-          std::abs(point.y) > params.crop_box_params.len_y ||
-          std::abs(point.z) > params.crop_box_params.len_z) {
+      if (std::abs(x) > box_len_x || std::abs(y) > box_len_y || std::abs(z) > box_len_z) {
         continue;
       }
     }
 
-    cloud[idx++] = PointT(pt_transformed.x(), pt_transformed.y(), pt_transformed.z());
+    if (do_crop_angular) {
+      const float azim = std::atan2(y, x);
+      if (azim < min_azim || azim > max_azim) {
+        continue;
+      }
+      const float planar = std::sqrt(x * x + y * y);
+      const float elev = std::atan2(z, planar);
+      if (elev < min_elev || elev > max_elev) {
+        continue;
+      }
+    }
+
+    float tx = x, ty = y, tz = z;
+    if (do_transform) {
+      tx = R(0, 0) * x + R(0, 1) * y + R(0, 2) * z + t(0);
+      ty = R(1, 0) * x + R(1, 1) * y + R(1, 2) * z + t(1);
+      tz = R(2, 0) * x + R(2, 1) * y + R(2, 2) * z + t(2);
+    }
+
+    (*cloud)[idx].x = tx;
+    (*cloud)[idx].y = ty;
+    (*cloud)[idx].z = tz;
+    ++idx;
   }
 
-  cloud.resize(idx);
-  cloud.width = cloud.points.size();
-  cloud.height = 1;
-  cloud.is_dense = true;
+  cloud->resize(idx);
+  cloud->width = static_cast<uint32_t>(idx);
+  cloud->height = 1;
+  cloud->is_dense = true;
+
+  if (do_downsample) {
+    pcl::VoxelGrid<PointT> voxel;
+    voxel.setLeafSize(leaf_size, leaf_size, leaf_size);
+    voxel.setMinimumPointsNumberPerVoxel(min_points_per_voxel);
+    voxel.setInputCloud(cloud);
+    pcl::PointCloud<PointT> tmp;
+    voxel.filter(tmp);
+    cloud->swap(tmp);
+  }
 }
 
 /**
@@ -177,7 +217,7 @@ void DUA_PCL_PUBLIC crop_sphere_cloud(pcl::PointCloud<PointT> & cloud, float rad
 
   // Remove points outside the sphere
   size_t idx = 0;
-  double radius_sq = radius * radius;
+  float radius_sq = radius * radius;
   for (const auto & point : cloud) {
     if ((point.x * point.x + point.y * point.y + point.z * point.z) <= radius_sq) {
       cloud[idx++] = point;

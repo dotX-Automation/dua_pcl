@@ -34,19 +34,19 @@ namespace dua_pcl
 struct DUA_PCL_PUBLIC TransformParams
 {
   bool do_transform;
-  Eigen::Isometry3d transform;
+  Eigen::Isometry3f transform;
 
   TransformParams()
   : do_transform(false),
-    transform(Eigen::Isometry3d::Identity())
+    transform(Eigen::Isometry3f::Identity())
   {}
 };
 
 struct DUA_PCL_PUBLIC CropSphereParams
 {
   bool do_crop_sphere;
-  double min_radius;
-  double max_radius;
+  float min_radius;
+  float max_radius;
 
   CropSphereParams()
   : do_crop_sphere(false),
@@ -58,10 +58,10 @@ struct DUA_PCL_PUBLIC CropSphereParams
 struct DUA_PCL_PUBLIC CropAngularParams
 {
   bool do_crop_angular;
-  double min_elevation_angle;
-  double max_elevation_angle;
-  double min_azimuth_angle;
-  double max_azimuth_angle;
+  float min_elevation_angle;
+  float max_elevation_angle;
+  float min_azimuth_angle;
+  float max_azimuth_angle;
 
   CropAngularParams()
   : do_crop_angular(false),
@@ -75,9 +75,9 @@ struct DUA_PCL_PUBLIC CropAngularParams
 struct DUA_PCL_PUBLIC CropBoxParams
 {
   bool do_crop_box;
-  double len_x;
-  double len_y;
-  double len_z;
+  float len_x;
+  float len_y;
+  float len_z;
 
   CropBoxParams()
   : do_crop_box(false),
@@ -99,8 +99,8 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
 struct DUA_PCL_PUBLIC DownsampleParams
 {
   bool do_downsample;
-  double leaf_size;
-  int min_points_per_voxel;
+  float leaf_size;
+  size_t min_points_per_voxel;
 
   DownsampleParams()
   : do_downsample(false),
