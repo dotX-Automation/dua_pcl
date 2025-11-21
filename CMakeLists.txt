@@ -21,6 +21,15 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(PCL 1.14 REQUIRED)
 find_package(pcl_conversions REQUIRED)
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 3.4 REQUIRED)
+
+# Bonxai
+add_library(bonxai INTERFACE)
+target_include_directories(bonxai INTERFACE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+)
 
 # DUA PCL library configuration
 add_library(dua_pcl INTERFACE)
@@ -30,7 +39,8 @@ target_include_directories(dua_pcl INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 target_link_libraries(dua_pcl INTERFACE
-  ${PCL_LIBRARIES})
+  ${PCL_LIBRARIES}
+  bonxai)
 ament_target_dependencies(dua_pcl INTERFACE
   pcl_conversions)
 
@@ -39,7 +49,7 @@ install(
   DIRECTORY include/
   DESTINATION include)
 install(
-  TARGETS dua_pcl
+  TARGETS dua_pcl bonxai
   EXPORT export_${PROJECT_NAME}
   INCLUDES DESTINATION include)
 
@@ -58,7 +68,9 @@ endif()
 # Export all dependencies and library targets for this package
 ament_export_targets(export_${PROJECT_NAME})
 ament_export_dependencies(
-  PCL 1.14
-  pcl_conversions)
+  PCL
+  pcl_conversions
+  Eigen3
+  eigen3_cmake_module)
 
 ament_package()

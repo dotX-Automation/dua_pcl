@@ -1,5 +1,5 @@
 /**
- * DUA PCL utilities functions.
+ * DUA PCL APIs.
  *
  * dotX Automation <info@dotxautomation.com>
  *
@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <dua_pcl/visibility_control.h>
+#include <dua_pcl/dua_pcl_struct.hpp>
 
 #include <pcl/common/transforms.h>
 #include <pcl/filters/crop_box.h>
@@ -35,6 +35,73 @@
 
 namespace dua_pcl
 {
+
+template<typename PointT>
+void DUA_PCL_PUBLIC preprocess_cloud(
+  pcl::PointCloud<PointT> & cloud,
+  const PreprocessParams & params)
+{
+  bool do_clean = cloud.is_dense == false;
+  bool do_transform = params.transform_params.do_transform;
+  bool do_crop_sphere = params.crop_sphere_params.do_crop_sphere;
+  bool do_crop_angular = params.crop_angular_params.do_crop_angular;
+  bool do_crop_box = params.crop_box_params.do_crop_box;
+  bool do_remove_ground = params.ground_params.do_remove_ground;
+  bool do_downsample = params.downsample_params.do_downsample;
+
+  size_t idx = 0;
+  for (auto & point : cloud.points) {
+    Eigen::Vector3d pt(point.x, point.y, point.z);
+    Eigen::Vector3d pt_transformed;
+
+    if (do_clean) {
+      if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) {
+        continue;
+      }
+    }
+
+    if (do_transform) {
+      pt_transformed = params.transform_params.transform * pt;
+    } else {
+      pt_transformed = pt;
+    }
+
+    if (do_crop_sphere) {
+      double dist_sq = pt.squaredNorm();
+      if (dist_sq < params.crop_sphere_params.min_radius * params.crop_sphere_params.min_radius ||
+          dist_sq > params.crop_sphere_params.max_radius * params.crop_sphere_params.max_radius) {
+        continue;
+      }
+    }
+
+    if (do_crop_angular) {
+      double elevation = std::atan2(point.z, std::sqrt(point.x * point.x + point.y * point.y)) * 180.0 / M_PI;
+      double azimuth = std::atan2(point.y, point.x) * 180.0f / M_PI;
+
+      if (elevation < params.crop_angular_params.min_elevation_angle ||
+          elevation > params.crop_angular_params.max_elevation_angle ||
+          azimuth < params.crop_angular_params.min_azimuth_angle ||
+          azimuth > params.crop_angular_params.max_azimuth_angle) {
+        continue;
+      }
+    }
+
+    if (do_crop_box) {
+      if (std::abs(point.x) > params.crop_box_params.len_x ||
+          std::abs(point.y) > params.crop_box_params.len_y ||
+          std::abs(point.z) > params.crop_box_params.len_z) {
+        continue;
+      }
+    }
+
+    cloud[idx++] = PointT(pt_transformed.x(), pt_transformed.y(), pt_transformed.z());
+  }
+
+  cloud.resize(idx);
+  cloud.width = cloud.points.size();
+  cloud.height = 1;
+  cloud.is_dense = true;
+}
 
 /**
  * @brief Removes NaN or infinite points from the point cloud.
@@ -71,7 +138,9 @@ void DUA_PCL_PUBLIC clean_cloud(pcl::PointCloud<PointT> & cloud)
  * @param len_z Maximum length along the z-axis.
  */
 template<typename PointT>
-void DUA_PCL_PUBLIC crop_box_cloud(pcl::PointCloud<PointT> & cloud, float len_x, float len_y, const float len_z)
+void DUA_PCL_PUBLIC crop_box_cloud(
+  pcl::PointCloud<PointT> & cloud, float len_x, float len_y,
+  const float len_z)
 {
   // Check if the point cloud is empty
   if (cloud.empty()) {
@@ -129,7 +198,9 @@ void DUA_PCL_PUBLIC crop_sphere_cloud(pcl::PointCloud<PointT> & cloud, float rad
  * @param min_points_per_voxel Minimum number of points per voxel.
  */
 template<typename PointT>
-void DUA_PCL_PUBLIC downsample_cloud(pcl::PointCloud<PointT> & cloud, float leaf_size, int min_points_per_voxel)
+void DUA_PCL_PUBLIC downsample_cloud(
+  pcl::PointCloud<PointT> & cloud, float leaf_size,
+  int min_points_per_voxel)
 {
   // Check if the point cloud is empty
   if (cloud.empty()) {
