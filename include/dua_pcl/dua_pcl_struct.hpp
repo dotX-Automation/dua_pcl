@@ -26,97 +26,64 @@
 
 #include <dua_pcl/visibility_control.h>
 
+#include <cstddef>
 #include <Eigen/Geometry>
 
 namespace dua_pcl
 {
 
-struct DUA_PCL_PUBLIC TransformParams
-{
-  bool do_transform;
-  Eigen::Isometry3f transform;
-
-  TransformParams()
-  : do_transform(false),
-    transform(Eigen::Isometry3f::Identity())
-  {}
-};
-
 struct DUA_PCL_PUBLIC CropSphereParams
 {
-  bool do_crop_sphere;
-  float min_radius;
-  float max_radius;
-
-  CropSphereParams()
-  : do_crop_sphere(false),
-    min_radius(0.0f),
-    max_radius(0.0f)
-  {}
-};
-
-struct DUA_PCL_PUBLIC CropAngularParams
-{
-  bool do_crop_angular;
-  float min_elevation_angle;
-  float max_elevation_angle;
-  float min_azimuth_angle;
-  float max_azimuth_angle;
-
-  CropAngularParams()
-  : do_crop_angular(false),
-    min_elevation_angle(0.0f),
-    max_elevation_angle(0.0f),
-    min_azimuth_angle(0.0f),
-    max_azimuth_angle(0.0f)
-  {}
+  bool do_crop_sphere = false;
+  float min_radius = 0.0f;  // [m]
+  float max_radius = 0.0f;  // [m]
 };
 
 struct DUA_PCL_PUBLIC CropBoxParams
 {
-  bool do_crop_box;
-  float len_x;
-  float len_y;
-  float len_z;
-
-  CropBoxParams()
-  : do_crop_box(false),
-    len_x(0.0f),
-    len_y(0.0f),
-    len_z(0.0f)
-  {}
+  bool do_crop_box = false;
+  float len_x = 0.0f;  // [m]
+  float len_y = 0.0f;  // [m]
+  float len_z = 0.0f;  // [m]
 };
 
-struct DUA_PCL_PUBLIC RemoveGroundParams
+struct DUA_PCL_PUBLIC CropAngularParams
 {
-  bool do_remove_ground;
+  bool do_crop_angular = false;
+  float min_elevation_angle = 0.0f;  // [rad]
+  float max_elevation_angle = 0.0f;  // [rad]
+  float min_azimuth_angle = 0.0f;  // [rad]
+  float max_azimuth_angle = 0.0f;  // [rad]
+};
 
-  RemoveGroundParams()
-  : do_remove_ground(false)
-  {}
+struct DUA_PCL_PUBLIC TransformParams
+{
+  bool do_transform = false;
+  Eigen::Isometry3f transform = Eigen::Isometry3f::Identity();
 };
 
 struct DUA_PCL_PUBLIC DownsampleParams
 {
-  bool do_downsample;
-  float leaf_size;
-  size_t min_points_per_voxel;
+  bool do_downsample = false;
+  float leaf_size = 0.0f;  // [m]
+  size_t min_points_per_voxel = 1u;
+};
 
-  DownsampleParams()
-  : do_downsample(false),
-    leaf_size(0.0f),
-    min_points_per_voxel(1)
-  {}
+struct DUA_PCL_PUBLIC RemoveGroundParams
+{
+  bool do_remove_ground = false;
+  float eps_angle = 0.0f;  // [rad]
+  float distance_threshold = 0.0f;  // [m]
 };
 
 struct DUA_PCL_PUBLIC PreprocessParams
 {
-  TransformParams transform_params;
-  CropSphereParams crop_sphere_params;
-  CropAngularParams crop_angular_params;
-  CropBoxParams crop_box_params;
+  CropSphereParams   crop_sphere_params;
+  CropBoxParams      crop_box_params;
+  CropAngularParams  crop_angular_params;
+  TransformParams    transform_params;
+  DownsampleParams   downsample_params;
   RemoveGroundParams ground_params;
-  DownsampleParams downsample_params;
 };
 
 } // namespace dua_pcl

@@ -59,10 +59,10 @@ void DUA_PCL_PUBLIC preprocess_cloud(
   const float box_len_z = params.crop_box_params.len_z;
 
   const bool do_crop_angular = params.crop_angular_params.do_crop_angular;
-  const float min_elev = params.crop_angular_params.min_elevation_angle;
-  const float max_elev = params.crop_angular_params.max_elevation_angle;
-  const float min_azim = params.crop_angular_params.min_azimuth_angle;
-  const float max_azim = params.crop_angular_params.max_azimuth_angle;
+  const float min_elev_rad = params.crop_angular_params.min_elevation_angle * M_PI / 180.0f;
+  const float max_elev_rad = params.crop_angular_params.max_elevation_angle * M_PI / 180.0f;
+  const float min_azim_rad = params.crop_angular_params.min_azimuth_angle * M_PI / 180.0f;
+  const float max_azim_rad = params.crop_angular_params.max_azimuth_angle * M_PI / 180.0f;
 
   const bool do_transform = params.transform_params.do_transform;
   Eigen::Matrix3f R;
@@ -72,10 +72,6 @@ void DUA_PCL_PUBLIC preprocess_cloud(
     R = T.block<3, 3>(0, 0);
     t = T.block<3, 1>(0, 3);
   }
-
-  const bool do_downsample = params.downsample_params.do_downsample;
-  const float leaf_size = params.downsample_params.leaf_size;
-  const size_t min_points_per_voxel = params.downsample_params.min_points_per_voxel;
 
   size_t idx = 0;
   for (const auto & point : cloud->points) {
@@ -104,12 +100,12 @@ void DUA_PCL_PUBLIC preprocess_cloud(
 
     if (do_crop_angular) {
       const float azim = std::atan2(y, x);
-      if (azim < min_azim || azim > max_azim) {
+      if (azim < min_azim_rad || azim > max_azim_rad) {
         continue;
       }
       const float planar = std::sqrt(x * x + y * y);
       const float elev = std::atan2(z, planar);
-      if (elev < min_elev || elev > max_elev) {
+      if (elev < min_elev_rad || elev > max_elev_rad) {
         continue;
       }
     }
@@ -126,20 +122,45 @@ void DUA_PCL_PUBLIC preprocess_cloud(
     (*cloud)[idx].z = tz;
     ++idx;
   }
-
   cloud->resize(idx);
   cloud->width = static_cast<uint32_t>(idx);
   cloud->height = 1;
   cloud->is_dense = true;
 
-  if (do_downsample) {
+  if (params.downsample_params.do_downsample && !cloud->empty()) {
     pcl::VoxelGrid<PointT> voxel;
+    const float leaf_size = params.downsample_params.leaf_size;
     voxel.setLeafSize(leaf_size, leaf_size, leaf_size);
-    voxel.setMinimumPointsNumberPerVoxel(min_points_per_voxel);
+    voxel.setMinimumPointsNumberPerVoxel(params.downsample_params.min_points_per_voxel);
     voxel.setInputCloud(cloud);
     pcl::PointCloud<PointT> tmp;
     voxel.filter(tmp);
     cloud->swap(tmp);
+  }
+
+  if (params.ground_params.do_remove_ground && cloud->size() > 100) {
+    pcl::SACSegmentation<PointT> seg;
+    pcl::PointIndices::Ptr ground(new pcl::PointIndices);
+    pcl::ModelCoefficients::Ptr coeffs(new pcl::ModelCoefficients);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
+    seg.setAxis(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
+    seg.setEpsAngle(params.ground_params.eps_angle * M_PI / 180.0f);
+    seg.setDistanceThreshold(params.ground_params.distance_threshold);
+    seg.setMaxIterations(100);
+    seg.setProbability(0.95);
+    seg.setOptimizeCoefficients(true);
+    seg.setInputCloud(cloud);
+    seg.segment(*ground, *coeffs);
+    if (!ground->indices.empty()) {
+      pcl::ExtractIndices<PointT> extract;
+      extract.setInputCloud(cloud);
+      extract.setIndices(ground);
+      extract.setNegative(true);
+      pcl::PointCloud<PointT> tmp;
+      extract.filter(tmp);
+      cloud->swap(tmp);
+    }
   }
 }
 
@@ -148,87 +169,75 @@ void DUA_PCL_PUBLIC preprocess_cloud(
  * @param cloud Point cloud to process.
  */
 template<typename PointT>
-void DUA_PCL_PUBLIC clean_cloud(pcl::PointCloud<PointT> & cloud)
+void DUA_PCL_PUBLIC clean_cloud(typename pcl::PointCloud<PointT>::Ptr cloud)
 {
-  // Check if the point cloud is dense
-  if (cloud.is_dense) {
+  if (!cloud || cloud->empty() || cloud->is_dense) {
     return;
   }
 
-  // Remove NaN or infinite points
   size_t idx = 0;
-  for (const auto & point : cloud) {
+  for (const auto & point : *cloud) {
     if (std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z)) {
-      cloud[idx++] = point;
+      (*cloud)[idx++] = point;
     }
   }
-
-  // Update the point cloud information
-  cloud.resize(idx);
-  cloud.width = cloud.points.size();
-  cloud.height = 1;
-  cloud.is_dense = true;
+  cloud->resize(idx);
+  cloud->width = cloud->points.size();
+  cloud->height = 1;
+  cloud->is_dense = true;
 }
 
-/**
- * @brief Removes points outside the specified range from the point cloud.
- * @param cloud Point cloud to process.
- * @param len_x Maximum length along the x-axis.
- * @param len_y Maximum length along the y-axis.
- * @param len_z Maximum length along the z-axis.
- */
+template<typename PointT>
+void DUA_PCL_PUBLIC crop_sphere_cloud(
+  typename pcl::PointCloud<PointT>::Ptr cloud,
+  const CropSphereParams & params)
+{
+  if (!cloud || cloud->empty() || !params.do_crop_sphere) {
+    return;
+  }
+
+  const float min_radius = params.min_radius;
+  const float max_radius = params.max_radius;
+  const float min_radius_sq = min_radius * min_radius;
+  const float max_radius_sq = max_radius * max_radius;
+
+  size_t idx = 0;
+  for (const auto & point : *cloud) {
+    const float radius_sq = point.x * point.x + point.y * point.y + point.z * point.z;
+    if (radius_sq >= min_radius_sq && radius_sq <= max_radius_sq) {
+      (*cloud)[idx++] = point;
+    }
+  }
+  cloud->resize(idx);
+  cloud->width = cloud->points.size();
+  cloud->height = 1;
+  cloud->is_dense = true;
+}
+
 template<typename PointT>
 void DUA_PCL_PUBLIC crop_box_cloud(
-  pcl::PointCloud<PointT> & cloud, float len_x, float len_y,
-  const float len_z)
+  typename pcl::PointCloud<PointT>::Ptr cloud,
+  const CropBoxParams & params)
 {
-  // Check if the point cloud is empty
-  if (cloud.empty()) {
+  if (!cloud || cloud->empty() || !params.do_crop_box) {
     return;
   }
 
-  // Remove points outside the box
+  const float len_x = params.len_x;
+  const float len_y = params.len_y;
+  const float len_z = params.len_z;
+
   size_t idx = 0;
-  for (const auto & point : cloud) {
-    if (std::abs(point.x) <= len_x && std::abs(point.y) <= len_y && std::abs(point.z) <= len_z) {
-      cloud[idx++] = point;
+  for (const auto & point : *cloud) {
+    if (std::abs(point.x) <= len_x && std::abs(point.y) <= len_y && std::abs(point.z) <= len_z)
+    {
+      (*cloud)[idx++] = point;
     }
   }
-
-  // Update the point cloud information
-  cloud.resize(idx);
-  cloud.width = cloud.points.size();
-  cloud.height = 1;
-  cloud.is_dense = true;
-}
-
-/**
- * @brief Removes points outside the specified sphere from the point cloud.
- * @param cloud Point cloud to process.
- * @param radius Sphere radius.
- */
-template<typename PointT>
-void DUA_PCL_PUBLIC crop_sphere_cloud(pcl::PointCloud<PointT> & cloud, float radius)
-{
-  // Check if the point cloud is empty
-  if (cloud.empty()) {
-    return;
-  }
-
-  // Remove points outside the sphere
-  size_t idx = 0;
-  float radius_sq = radius * radius;
-  for (const auto & point : cloud) {
-    if ((point.x * point.x + point.y * point.y + point.z * point.z) <= radius_sq) {
-      cloud[idx++] = point;
-    }
-  }
-
-  // Update the point cloud information
-  cloud.resize(idx);
-  cloud.width = cloud.points.size();
-  cloud.height = 1;
-  cloud.is_dense = true;
+  cloud->resize(idx);
+  cloud->width = cloud->points.size();
+  cloud->height = 1;
+  cloud->is_dense = true;
 }
 
 /**
