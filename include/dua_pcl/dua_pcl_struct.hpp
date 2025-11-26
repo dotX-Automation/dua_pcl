@@ -27,7 +27,7 @@
 #include <dua_pcl/visibility_control.h>
 
 #include <cstddef>
-#include <Eigen/Geometry>
+#include <pose_kit/pose.hpp>
 
 namespace dua_pcl
 {
@@ -42,24 +42,24 @@ struct DUA_PCL_PUBLIC CropSphereParams
 struct DUA_PCL_PUBLIC CropBoxParams
 {
   bool do_crop_box = false;
-  float len_x = 0.0f;  // [m]
-  float len_y = 0.0f;  // [m]
-  float len_z = 0.0f;  // [m]
+  float half_len_x = 0.0f;  // [m]
+  float half_len_y = 0.0f;  // [m]
+  float half_len_z = 0.0f;  // [m]
 };
 
 struct DUA_PCL_PUBLIC CropAngularParams
 {
   bool do_crop_angular = false;
-  float min_elevation_angle = 0.0f;  // [rad]
-  float max_elevation_angle = 0.0f;  // [rad]
-  float min_azimuth_angle = 0.0f;  // [rad]
-  float max_azimuth_angle = 0.0f;  // [rad]
+  float min_elev = 0.0f;  // [deg]
+  float max_elev = 0.0f;  // [deg]
+  float min_azim = 0.0f;  // [deg]
+  float max_azim = 0.0f;  // [deg]
 };
 
 struct DUA_PCL_PUBLIC TransformParams
 {
   bool do_transform = false;
-  Eigen::Isometry3f transform = Eigen::Isometry3f::Identity();
+  pose_kit::Pose pose = pose_kit::Pose();
 };
 
 struct DUA_PCL_PUBLIC DownsampleParams
@@ -72,7 +72,7 @@ struct DUA_PCL_PUBLIC DownsampleParams
 struct DUA_PCL_PUBLIC RemoveGroundParams
 {
   bool do_remove_ground = false;
-  float eps_angle = 0.0f;  // [rad]
+  float eps_angle = 0.0f;  // [deg]
   float distance_threshold = 0.0f;  // [m]
 };
 

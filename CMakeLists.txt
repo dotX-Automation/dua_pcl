@@ -3,12 +3,10 @@ project(dua_pcl)
 
 set(CMAKE_BUILD_TYPE "RelWithDebInfo")
 
-# Default to C99
 if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
 endif()
 
-# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()
@@ -20,16 +18,7 @@ endif()
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(PCL 1.14 REQUIRED)
-find_package(pcl_conversions REQUIRED)
-find_package(eigen3_cmake_module REQUIRED)
-find_package(Eigen3 3.4 REQUIRED)
-
-# Bonxai
-add_library(bonxai INTERFACE)
-target_include_directories(bonxai INTERFACE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-)
+find_package(pose_kit REQUIRED)
 
 # DUA PCL library configuration
 add_library(dua_pcl INTERFACE)
@@ -39,17 +28,16 @@ target_include_directories(dua_pcl INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
 target_link_libraries(dua_pcl INTERFACE
-  ${PCL_LIBRARIES}
-  bonxai)
+  ${PCL_LIBRARIES})
 ament_target_dependencies(dua_pcl INTERFACE
-  pcl_conversions)
+  pose_kit)
 
 # Library installation
 install(
   DIRECTORY include/
   DESTINATION include)
 install(
-  TARGETS dua_pcl bonxai
+  TARGETS dua_pcl
   EXPORT export_${PROJECT_NAME}
   INCLUDES DESTINATION include)
 
@@ -69,8 +57,6 @@ endif()
 ament_export_targets(export_${PROJECT_NAME})
 ament_export_dependencies(
   PCL
-  pcl_conversions
-  Eigen3
-  eigen3_cmake_module)
+  pose_kit)
 
 ament_package()
