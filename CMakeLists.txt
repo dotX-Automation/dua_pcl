@@ -18,6 +18,7 @@ endif()
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(PCL 1.14 REQUIRED)
+find_package(pcl_conversions REQUIRED)
 find_package(pose_kit REQUIRED)
 
 # DUA PCL library configuration
@@ -57,6 +58,7 @@ endif()
 ament_export_targets(export_${PROJECT_NAME})
 ament_export_dependencies(
   PCL
+  pcl_conversions
   pose_kit)
 
 ament_package()
