@@ -63,12 +63,12 @@ template<typename PointT>
 }
 
 template<typename PointT>
-[[nodiscard]] inline bool is_within_radius_sq(
+[[nodiscard]] inline bool is_within_range_sq(
   const PointT & point,
-  float min_radius_sq, float max_radius_sq) noexcept
+  float min_range_sq, float max_range_sq) noexcept
 {
   const float radius_sq = point.x * point.x + point.y * point.y + point.z * point.z;
-  return radius_sq >= min_radius_sq && radius_sq <= max_radius_sq;
+  return radius_sq >= min_range_sq && radius_sq <= max_range_sq;
 }
 
 template<typename PointT>
@@ -136,18 +136,18 @@ void DUA_PCL_PUBLIC clean_cloud(typename pcl::PointCloud<PointT>::Ptr cloud)
 template<typename PointT>
 void DUA_PCL_PUBLIC crop_sphere_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
-  const CropSphereParams & params)
+  const CropSphereParams & crop_sphere_params)
 {
-  if (!cloud || cloud->empty() || !params.do_crop_sphere) {
+  if (!cloud || cloud->empty() || !crop_sphere_params.do_crop_sphere) {
     return;
   }
 
-  const float min_radius_sq = params.min_radius * params.min_radius;
-  const float max_radius_sq = params.max_radius * params.max_radius;
+  const float min_range_sq = crop_sphere_params.min_range * crop_sphere_params.min_range;
+  const float max_range_sq = crop_sphere_params.max_range * crop_sphere_params.max_range;
 
   std::size_t idx = 0;
   for (const auto & point : *cloud) {
-    if (is_within_radius_sq(point, min_radius_sq, max_radius_sq)) {
+    if (is_within_range_sq(point, min_range_sq, max_range_sq)) {
       (*cloud)[idx++] = point;
     }
   }
@@ -158,15 +158,15 @@ void DUA_PCL_PUBLIC crop_sphere_cloud(
 template<typename PointT>
 void DUA_PCL_PUBLIC crop_box_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
-  const CropBoxParams & params)
+  const CropBoxParams & crop_box_params)
 {
-  if (!cloud || cloud->empty() || !params.do_crop_box) {
+  if (!cloud || cloud->empty() || !crop_box_params.do_crop_box) {
     return;
   }
 
-  const float half_len_x = params.half_len_x;
-  const float half_len_y = params.half_len_y;
-  const float half_len_z = params.half_len_z;
+  const float half_len_x = crop_box_params.half_len_x;
+  const float half_len_y = crop_box_params.half_len_y;
+  const float half_len_z = crop_box_params.half_len_z;
 
   std::size_t idx = 0;
   for (const auto & point : *cloud) {
@@ -181,16 +181,16 @@ void DUA_PCL_PUBLIC crop_box_cloud(
 template<typename PointT>
 void DUA_PCL_PUBLIC crop_fov_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
-  const CropFovParams & params)
+  const CropFovParams & crop_fov_params)
 {
-  if (!cloud || cloud->empty() || !params.do_crop_fov) {
+  if (!cloud || cloud->empty() || !crop_fov_params.do_crop_fov) {
     return;
   }
 
-  const float min_elev_rad = deg_to_rad(params.min_elev);
-  const float max_elev_rad = deg_to_rad(params.max_elev);
-  const float min_azim_rad = deg_to_rad(params.min_azim);
-  const float max_azim_rad = deg_to_rad(params.max_azim);
+  const float min_elev_rad = deg_to_rad(crop_fov_params.min_elev);
+  const float max_elev_rad = deg_to_rad(crop_fov_params.max_elev);
+  const float min_azim_rad = deg_to_rad(crop_fov_params.min_azim);
+  const float max_azim_rad = deg_to_rad(crop_fov_params.max_azim);
 
   std::size_t idx = 0;
   for (const auto & point : *cloud) {
@@ -207,13 +207,13 @@ void DUA_PCL_PUBLIC crop_fov_cloud(
 template<typename PointT>
 void DUA_PCL_PUBLIC transform_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
-  const TransformParams & params)
+  const TransformParams & transform_params)
 {
-  if (!cloud || cloud->empty() || !params.do_transform) {
+  if (!cloud || cloud->empty() || !transform_params.do_transform) {
     return;
   }
 
-  const pose_kit::Pose & pose = params.pose;
+  const pose_kit::Pose & pose = transform_params.pose;
   pose.get_frame_id(cloud->header.frame_id);
   cloud->header.stamp = pose.get_timestamp_us();
 
@@ -231,20 +231,20 @@ void DUA_PCL_PUBLIC transform_cloud(
 template<typename PointT>
 void DUA_PCL_PUBLIC downsample_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
-  const DownsampleParams & params)
+  const DownsampleParams & downsample_params)
 {
-  if (!cloud || cloud->empty() || !params.do_downsample) {
+  if (!cloud || cloud->empty() || !downsample_params.do_downsample) {
     return;
   }
 
-  const float leaf_size = params.leaf_size;
+  const float leaf_size = downsample_params.leaf_size;
   if (leaf_size <= 0.0f) {
     return;
   }
 
   pcl::VoxelGrid<PointT> voxel;
   voxel.setLeafSize(leaf_size, leaf_size, leaf_size);
-  voxel.setMinimumPointsNumberPerVoxel(params.min_points_per_voxel);
+  voxel.setMinimumPointsNumberPerVoxel(downsample_params.min_points_per_voxel);
   voxel.setInputCloud(cloud);
 
   pcl::PointCloud<PointT> tmp;
@@ -255,9 +255,9 @@ void DUA_PCL_PUBLIC downsample_cloud(
 template<typename PointT>
 void DUA_PCL_PUBLIC remove_ground(
   typename pcl::PointCloud<PointT>::Ptr cloud,
-  const RemoveGroundParams & params)
+  const RemoveGroundParams & remove_ground_params)
 {
-  if (!cloud || cloud->empty() || !params.do_remove_ground || cloud->size() <= 100) {
+  if (!cloud || cloud->empty() || !remove_ground_params.do_remove_ground || cloud->size() <= 100) {
     return;
   }
 
@@ -268,8 +268,8 @@ void DUA_PCL_PUBLIC remove_ground(
   seg.setMethodType(pcl::SAC_RANSAC);
   seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
   seg.setAxis(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
-  seg.setEpsAngle(deg_to_rad(params.eps_angle));
-  seg.setDistanceThreshold(params.distance_threshold);
+  seg.setEpsAngle(deg_to_rad(remove_ground_params.eps_angle));
+  seg.setDistanceThreshold(remove_ground_params.distance_threshold);
   seg.setMaxIterations(100);
   seg.setProbability(0.99);
   seg.setOptimizeCoefficients(true);
@@ -303,10 +303,10 @@ void DUA_PCL_PUBLIC preprocess_cloud(
   const bool do_crop_fov = params.crop_fov_params.do_crop_fov;
   const bool do_transform = params.transform_params.do_transform;
 
-  const float min_radius_sq =
-    params.crop_sphere_params.min_radius * params.crop_sphere_params.min_radius;
-  const float max_radius_sq =
-    params.crop_sphere_params.max_radius * params.crop_sphere_params.max_radius;
+  const float min_range_sq =
+    params.crop_sphere_params.min_range * params.crop_sphere_params.min_range;
+  const float max_range_sq =
+    params.crop_sphere_params.max_range * params.crop_sphere_params.max_range;
 
   const float half_len_x = params.crop_box_params.half_len_x;
   const float half_len_y = params.crop_box_params.half_len_y;
@@ -338,7 +338,7 @@ void DUA_PCL_PUBLIC preprocess_cloud(
     }
 
     if (do_crop_sphere &&
-      !is_within_radius_sq(point, min_radius_sq, max_radius_sq))
+      !is_within_range_sq(point, min_range_sq, max_range_sq))
     {
       continue;
     }
@@ -369,8 +369,8 @@ void DUA_PCL_PUBLIC preprocess_cloud(
     dua_pcl::downsample_cloud<PointT>(cloud, params.downsample_params);
   }
 
-  if (params.ground_params.do_remove_ground && !cloud->empty()) {
-    dua_pcl::remove_ground<PointT>(cloud, params.ground_params);
+  if (params.remove_ground_params.do_remove_ground && !cloud->empty()) {
+    dua_pcl::remove_ground<PointT>(cloud, params.remove_ground_params);
   }
 }
 
