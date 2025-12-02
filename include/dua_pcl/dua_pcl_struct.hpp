@@ -45,7 +45,24 @@ struct DUA_PCL_PUBLIC CropSphereParams
   : do_crop_sphere(do_crop_sphere),
     min_range(min_range),
     max_range(max_range)
-  {}
+  {
+    validate();
+  }
+
+  void validate() const
+  {
+    if (do_crop_sphere) {
+      if (min_range < 0.0f) {
+        throw std::invalid_argument("CropSphereParams: min_range must be >= 0.");
+      }
+      if (max_range <= 0.0f) {
+        throw std::invalid_argument("CropSphereParams: max_range must be > 0.");
+      }
+      if (max_range <= min_range) {
+        throw std::invalid_argument("CropSphereParams: max_range must be > min_range.");
+      }
+    }
+  }
 
   [[nodiscard]] std::string to_string() const
   {
@@ -78,7 +95,24 @@ struct DUA_PCL_PUBLIC CropBoxParams
     half_len_x(half_len_x),
     half_len_y(half_len_y),
     half_len_z(half_len_z)
-  {}
+  {
+    validate();
+  }
+
+  void validate() const
+  {
+    if (do_crop_box) {
+      if (half_len_x <= 0.0f) {
+        throw std::invalid_argument("CropBoxParams: half_len_x must be > 0.");
+      }
+      if (half_len_y <= 0.0f) {
+        throw std::invalid_argument("CropBoxParams: half_len_y must be > 0.");
+      }
+      if (half_len_z <= 0.0f) {
+        throw std::invalid_argument("CropBoxParams: half_len_z must be > 0.");
+      }
+    }
+  }
 
   [[nodiscard]] std::string to_string() const
   {
@@ -127,7 +161,45 @@ struct DUA_PCL_PUBLIC CropFovParams
     max_elev(max_elev),
     off_elev(off_elev),
     step_elev(step_elev)
-  {}
+  {
+    validate();
+  }
+
+  void validate() const
+  {
+    if (do_crop_fov) {
+      if (min_azim < -180.0f || min_azim > 180.0f) {
+        throw std::invalid_argument("CropFovParams: min_azim must be in [-180, 180] deg.");
+      }
+      if (max_azim < -180.0f || max_azim > 180.0f) {
+        throw std::invalid_argument("CropFovParams: max_azim must be in [-180, 180] deg.");
+      }
+      if (max_azim <= min_azim) {
+        throw std::invalid_argument("CropFovParams: max_azim must be > min_azim.");
+      }
+      if (off_azim < -180.0f || off_azim > 180.0f) {
+        throw std::invalid_argument("CropFovParams: off_azim must be in [-180, 180] deg.");
+      }
+      if (step_azim < 0.0f) {
+        throw std::invalid_argument("CropFovParams: step_azim must be >= 0.");
+      }
+      if (min_elev < -180.0f || min_elev > 180.0f) {
+        throw std::invalid_argument("CropFovParams: min_elev must be in [-180, 180] deg.");
+      }
+      if (max_elev < -180.0f || max_elev > 180.0f) {
+        throw std::invalid_argument("CropFovParams: max_elev must be in [-180, 180] deg.");
+      }
+      if (max_elev <= min_elev) {
+        throw std::invalid_argument("CropFovParams: max_elev must be > min_elev.");
+      }
+      if (off_elev < -180.0f || off_elev > 180.0f) {
+        throw std::invalid_argument("CropFovParams: off_elev must be in [-180, 180] deg.");
+      }
+      if (step_elev < 0.0f) {
+        throw std::invalid_argument("CropFovParams: step_elev must be >= 0.");
+      }
+    }
+  }
 
   [[nodiscard]] std::string to_string() const
   {
@@ -164,7 +236,18 @@ struct DUA_PCL_PUBLIC TransformParams
   : do_transform(do_transform),
     frame_id(frame_id),
     pose(pose)
-  {}
+  {
+    validate();
+  }
+
+  void validate() const
+  {
+    if (do_transform) {
+      if (frame_id.empty()) {
+        throw std::invalid_argument("TransformParams: frame_id must be non-empty.");
+      }
+    }
+  }
 
   [[nodiscard]] std::string to_string() const
   {
@@ -192,7 +275,21 @@ struct DUA_PCL_PUBLIC DownsampleParams
   : do_downsample(do_downsample),
     leaf_size(leaf_size),
     min_points_per_voxel(min_points_per_voxel)
-  {}
+  {
+    validate();
+  }
+
+  void validate() const
+  {
+    if (do_downsample) {
+      if (leaf_size <= 0.0f) {
+        throw std::invalid_argument("DownsampleParams: leaf_size must be > 0.");
+      }
+      if (min_points_per_voxel == 0u) {
+        throw std::invalid_argument("DownsampleParams: min_points_per_voxel must be > 0.");
+      }
+    }
+  }
 
   [[nodiscard]] std::string to_string() const
   {
@@ -221,7 +318,21 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
   : do_remove_ground(do_remove_ground),
     eps_angle(eps_angle),
     distance_threshold(distance_threshold)
-  {}
+  {
+    validate();
+  }
+
+  void validate() const
+  {
+    if (do_remove_ground) {
+      if (eps_angle < 0.0f || eps_angle > 90.0f) {
+        throw std::invalid_argument("RemoveGroundParams: eps_angle must be in [0, 90] deg.");
+      }
+      if (distance_threshold <= 0.0f) {
+        throw std::invalid_argument("RemoveGroundParams: distance_threshold must be > 0.");
+      }
+    }
+  }
 
   [[nodiscard]] std::string to_string() const
   {
