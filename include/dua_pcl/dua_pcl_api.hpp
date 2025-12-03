@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include <cmath>
+#include <dua_math/dua_math.hpp>
 #include <dua_pcl/dua_pcl_struct.hpp>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/voxel_grid.h>
@@ -33,13 +33,6 @@
 
 namespace dua_pcl
 {
-
-constexpr float DEG_TO_RAD = static_cast<float>(M_PI / 180.0f);
-
-inline constexpr float deg_to_rad(float deg) noexcept
-{
-  return deg * DEG_TO_RAD;
-}
 
 template<typename PointT>
 inline void resize_cloud(
@@ -84,16 +77,16 @@ template<typename PointT>
 template<typename PointT>
 [[nodiscard]] inline bool is_within_fov(
   const PointT & point,
-  float min_elev_rad, float max_elev_rad,
-  float min_azim_rad, float max_azim_rad) noexcept
+  float min_azim_rad, float max_azim_rad, float off_azim_rad,
+  float min_elev_rad, float max_elev_rad, float off_elev_rad) noexcept
 {
-  const float azim = std::atan2(point.y, point.x);
+  const float azim = dua_math::normalize_angle(std::atan2(point.y, point.x) - off_azim_rad);
   if (azim < min_azim_rad || azim > max_azim_rad) {
     return false;
   }
 
   const float planar = std::hypot(point.x, point.y);
-  const float elev = std::atan2(point.z, planar);
+  const float elev = dua_math::normalize_angle(std::atan2(point.z, planar) - off_elev_rad);
   if (elev < min_elev_rad || elev > max_elev_rad) {
     return false;
   }
@@ -187,15 +180,18 @@ void DUA_PCL_PUBLIC crop_fov_cloud(
     return;
   }
 
-  const float min_elev_rad = deg_to_rad(crop_fov_params.min_elev);
-  const float max_elev_rad = deg_to_rad(crop_fov_params.max_elev);
-  const float min_azim_rad = deg_to_rad(crop_fov_params.min_azim);
-  const float max_azim_rad = deg_to_rad(crop_fov_params.max_azim);
+  const float min_azim_rad = dua_math::deg_to_rad(crop_fov_params.min_azim);
+  const float max_azim_rad = dua_math::deg_to_rad(crop_fov_params.max_azim);
+  const float off_azim_rad = dua_math::deg_to_rad(crop_fov_params.off_azim);
+  const float min_elev_rad = dua_math::deg_to_rad(crop_fov_params.min_elev);
+  const float max_elev_rad = dua_math::deg_to_rad(crop_fov_params.max_elev);
+  const float off_elev_rad = dua_math::deg_to_rad(crop_fov_params.off_elev);
 
   std::size_t idx = 0;
   for (const auto & point : *cloud) {
-    if (is_within_fov(point, min_elev_rad, max_elev_rad,
-                              min_azim_rad, max_azim_rad))
+    if (is_within_fov(point,
+      min_azim_rad, max_azim_rad, off_azim_rad,
+      min_elev_rad, max_elev_rad, off_elev_rad))
     {
       (*cloud)[idx++] = point;
     }
@@ -268,7 +264,7 @@ void DUA_PCL_PUBLIC remove_ground(
   seg.setMethodType(pcl::SAC_RANSAC);
   seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
   seg.setAxis(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
-  seg.setEpsAngle(deg_to_rad(remove_ground_params.eps_angle));
+  seg.setEpsAngle(dua_math::deg_to_rad(remove_ground_params.eps_angle));
   seg.setDistanceThreshold(remove_ground_params.distance_threshold);
   seg.setMaxIterations(100);
   seg.setProbability(0.99);
@@ -312,10 +308,12 @@ void DUA_PCL_PUBLIC preprocess_cloud(
   const float half_len_y = params.crop_box_params.half_len_y;
   const float half_len_z = params.crop_box_params.half_len_z;
 
-  const float min_elev_rad = deg_to_rad(params.crop_fov_params.min_elev);
-  const float max_elev_rad = deg_to_rad(params.crop_fov_params.max_elev);
-  const float min_azim_rad = deg_to_rad(params.crop_fov_params.min_azim);
-  const float max_azim_rad = deg_to_rad(params.crop_fov_params.max_azim);
+  const float min_azim_rad = dua_math::deg_to_rad(params.crop_fov_params.min_azim);
+  const float max_azim_rad = dua_math::deg_to_rad(params.crop_fov_params.max_azim);
+  const float off_azim_rad = dua_math::deg_to_rad(params.crop_fov_params.off_azim);
+  const float min_elev_rad = dua_math::deg_to_rad(params.crop_fov_params.min_elev);
+  const float max_elev_rad = dua_math::deg_to_rad(params.crop_fov_params.max_elev);
+  const float off_elev_rad = dua_math::deg_to_rad(params.crop_fov_params.off_elev);
 
   Eigen::Matrix3f R = Eigen::Matrix3f::Identity();
   Eigen::Vector3f t = Eigen::Vector3f::Zero();
@@ -350,7 +348,9 @@ void DUA_PCL_PUBLIC preprocess_cloud(
     }
 
     if (do_crop_fov &&
-      !is_within_fov(point, min_elev_rad, max_elev_rad, min_azim_rad, max_azim_rad))
+      !is_within_fov(point,
+        min_azim_rad, max_azim_rad, off_azim_rad,
+        min_elev_rad, max_elev_rad, off_elev_rad))
     {
       continue;
     }

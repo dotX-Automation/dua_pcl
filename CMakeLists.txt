@@ -17,13 +17,14 @@ endif()
 
 # Find dependencies
 find_package(ament_cmake REQUIRED)
+find_package(dua_math REQUIRED)
 find_package(PCL 1.14 REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(pose_kit REQUIRED)
 
 # DUA PCL library configuration
 add_library(dua_pcl INTERFACE)
-target_compile_features(dua_pcl INTERFACE c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(dua_pcl INTERFACE c_std_99 cxx_std_17)
 target_compile_definitions(dua_pcl INTERFACE "DUA_PCL_BUILDING_LIBRARY")
 target_include_directories(dua_pcl INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -31,6 +32,8 @@ target_include_directories(dua_pcl INTERFACE
 target_link_libraries(dua_pcl INTERFACE
   ${PCL_LIBRARIES})
 ament_target_dependencies(dua_pcl INTERFACE
+  dua_math
+  pcl_conversions
   pose_kit)
 
 # Library installation
@@ -60,6 +63,7 @@ endif()
 # Export all dependencies and library targets for this package
 ament_export_targets(export_${PROJECT_NAME})
 ament_export_dependencies(
+  dua_math
   PCL
   pcl_conversions
   pose_kit)
