@@ -80,14 +80,14 @@ template<typename PointT>
   float min_azim_rad, float max_azim_rad, float off_azim_rad,
   float min_elev_rad, float max_elev_rad, float off_elev_rad) noexcept
 {
-  const float azim = dua_math::normalize_angle(std::atan2(point.y, point.x) - off_azim_rad);
-  if (azim < min_azim_rad || azim > max_azim_rad) {
+  const float azim_rad = dua_math::normalize_angle(std::atan2(point.y, point.x) - off_azim_rad);
+  if (azim_rad < min_azim_rad || azim_rad > max_azim_rad) {
     return false;
   }
 
   const float planar = std::hypot(point.x, point.y);
-  const float elev = dua_math::normalize_angle(std::atan2(point.z, planar) - off_elev_rad);
-  if (elev < min_elev_rad || elev > max_elev_rad) {
+  const float elev_rad = dua_math::normalize_angle(std::atan2(point.z, planar) - off_elev_rad);
+  if (elev_rad < min_elev_rad || elev_rad > max_elev_rad) {
     return false;
   }
 
