@@ -266,15 +266,15 @@ struct DUA_PCL_PUBLIC DownsampleParams
 {
   bool do_downsample = false;
   float leaf_size = 0.0f;  // [m]
-  size_t min_points_per_voxel = 1u;
+  size_t min_points = 1u;
 
   DownsampleParams(
     bool do_downsample = false,
     float leaf_size = 0.0f,
-    size_t min_points_per_voxel = 1u)
+    size_t min_points = 1u)
   : do_downsample(do_downsample),
     leaf_size(leaf_size),
-    min_points_per_voxel(min_points_per_voxel)
+    min_points(min_points)
   {
     validate();
   }
@@ -285,8 +285,8 @@ struct DUA_PCL_PUBLIC DownsampleParams
       if (leaf_size <= 0.0f) {
         throw std::invalid_argument("DownsampleParams: leaf_size must be > 0.");
       }
-      if (min_points_per_voxel == 0u) {
-        throw std::invalid_argument("DownsampleParams: min_points_per_voxel must be > 0.");
+      if (min_points == 0u) {
+        throw std::invalid_argument("DownsampleParams: min_points must be > 0.");
       }
     }
   }
@@ -297,7 +297,7 @@ struct DUA_PCL_PUBLIC DownsampleParams
     if (do_downsample) {
       oss << "- DownsampleParams:\n"
           << "  - Leaf size (m): " << leaf_size << "\n"
-          << "  - Min points per voxel: " << min_points_per_voxel;
+          << "  - Min points per voxel: " << min_points;
     } else {
       oss << "- DownsampleParams: False";
     }
@@ -309,15 +309,15 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
 {
   bool do_remove_ground = false;
   float eps_angle = 0.0f;  // [deg]
-  float distance_threshold = 0.0f;  // [m]
+  float dist_thres = 0.0f;  // [m]
 
   RemoveGroundParams(
     bool do_remove_ground = false,
     float eps_angle = 0.0f,
-    float distance_threshold = 0.0f)
+    float dist_thres = 0.0f)
   : do_remove_ground(do_remove_ground),
     eps_angle(eps_angle),
-    distance_threshold(distance_threshold)
+    dist_thres(dist_thres)
   {
     validate();
   }
@@ -328,8 +328,8 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
       if (eps_angle < 0.0f || eps_angle > 90.0f) {
         throw std::invalid_argument("RemoveGroundParams: eps_angle must be in [0, 90] deg.");
       }
-      if (distance_threshold <= 0.0f) {
-        throw std::invalid_argument("RemoveGroundParams: distance_threshold must be > 0.");
+      if (dist_thres <= 0.0f) {
+        throw std::invalid_argument("RemoveGroundParams: dist_thres must be > 0.");
       }
     }
   }
@@ -340,7 +340,7 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
     if (do_remove_ground) {
       oss << "- RemoveGroundParams:\n"
           << "  - Eps angle (deg): " << eps_angle << "\n"
-          << "  - Distance threshold (m): " << distance_threshold;
+          << "  - Distance threshold (m): " << dist_thres;
     } else {
       oss << "- RemoveGroundParams: False";
     }

@@ -240,7 +240,7 @@ void DUA_PCL_PUBLIC downsample_cloud(
 
   pcl::VoxelGrid<PointT> voxel;
   voxel.setLeafSize(leaf_size, leaf_size, leaf_size);
-  voxel.setMinimumPointsNumberPerVoxel(downsample_params.min_points_per_voxel);
+  voxel.setMinimumPointsNumberPerVoxel(downsample_params.min_points);
   voxel.setInputCloud(cloud);
 
   pcl::PointCloud<PointT> tmp;
@@ -265,7 +265,7 @@ void DUA_PCL_PUBLIC remove_ground(
   seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
   seg.setAxis(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
   seg.setEpsAngle(dua_math::deg_to_rad(remove_ground_params.eps_angle));
-  seg.setDistanceThreshold(remove_ground_params.distance_threshold);
+  seg.setDistanceThreshold(remove_ground_params.dist_thres);
   seg.setMaxIterations(100);
   seg.setProbability(0.99);
   seg.setOptimizeCoefficients(true);
