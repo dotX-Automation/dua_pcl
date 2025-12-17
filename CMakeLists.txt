@@ -25,8 +25,7 @@ find_package(pose_kit REQUIRED)
 # DUA PCL library
 add_library(${PROJECT_NAME} INTERFACE)
 target_compile_features(${PROJECT_NAME} INTERFACE c_std_99 cxx_std_17)
-target_compile_definitions(${PROJECT_NAME} INTERFACE
-  "DUA_PCL_BUILDING_LIBRARY"
+target_compile_definitions(${PROJECT_NAME} INTERFACE "DUA_PCL_BUILDING_LIBRARY"
   ${PCL_DEFINITIONS}
 )
 target_include_directories(${PROJECT_NAME} INTERFACE
