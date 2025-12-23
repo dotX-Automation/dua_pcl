@@ -253,8 +253,21 @@ struct DUA_PCL_PUBLIC TransformParams
   {
     std::ostringstream oss;
     if (do_transform) {
+      Eigen::Vector3d pos;
+      pose.get_position(pos);
+      Eigen::Vector3d rpy;
+      pose.get_rpy(rpy);
       oss << "- TransformParams:\n"
-          << "  - Frame ID: " << frame_id;
+          << "  - Frame ID: " << frame_id << "\n"
+          << "  - Pose: " << pose.header().frame_id << " @ "
+          << "xyz: ("
+          << pos.x() << ", "
+          << pos.y() << ", "
+          << pos.z() << "), "
+          << "rpy: ["
+          << rpy.x() * 180.0 / M_PI << ", "
+          << rpy.y() * 180.0 / M_PI << ", "
+          << rpy.z() * 180.0 / M_PI << "]";
     } else {
       oss << "- TransformParams: False";
     }
