@@ -34,8 +34,8 @@ namespace dua_pcl
 struct DUA_PCL_PUBLIC CropSphereParams
 {
   bool do_crop_sphere = false;
-  float min_range = 0.0f;  // [m]
-  float max_range = 0.0f;  // [m]
+  float min_range = 0.0f; // [m]
+  float max_range = 0.0f; // [m]
 
   CropSphereParams(
     bool do_crop_sphere = false,
@@ -81,9 +81,9 @@ struct DUA_PCL_PUBLIC CropSphereParams
 struct DUA_PCL_PUBLIC CropBoxParams
 {
   bool do_crop_box = false;
-  float half_len_x = 0.0f;  // [m]
-  float half_len_y = 0.0f;  // [m]
-  float half_len_z = 0.0f;  // [m]
+  float half_len_x = 0.0f; // [m]
+  float half_len_y = 0.0f; // [m]
+  float half_len_z = 0.0f; // [m]
 
   CropBoxParams(
     bool do_crop_box = false,
@@ -132,14 +132,14 @@ struct DUA_PCL_PUBLIC CropBoxParams
 struct DUA_PCL_PUBLIC CropFovParams
 {
   bool do_crop_fov = false;
-  float min_azim = 0.0f;  // [deg]
-  float max_azim = 0.0f;  // [deg]
-  float off_azim = 0.0f;  // [deg]
-  float step_azim = 0.0f; // [deg]
-  float min_elev = 0.0f;  // [deg]
-  float max_elev = 0.0f;  // [deg]
-  float off_elev = 0.0f;  // [deg]
-  float step_elev = 0.0f; // [deg]
+  float min_azim = 0.0f;  // [rad]
+  float max_azim = 0.0f;  // [rad]
+  float off_azim = 0.0f;  // [rad]
+  float step_azim = 0.0f; // [rad]
+  float min_elev = 0.0f;  // [rad]
+  float max_elev = 0.0f;  // [rad]
+  float off_elev = 0.0f;  // [rad]
+  float step_elev = 0.0f; // [rad]
 
   CropFovParams(
     bool do_crop_fov = false,
@@ -167,31 +167,31 @@ struct DUA_PCL_PUBLIC CropFovParams
   void validate() const
   {
     if (do_crop_fov) {
-      if (min_azim < -180.0f || min_azim > 180.0f) {
+      if (min_azim < -M_PI || min_azim > M_PI) {
         throw std::invalid_argument("CropFovParams: min_azim must be in [-180, 180] deg.");
       }
-      if (max_azim < -180.0f || max_azim > 180.0f) {
+      if (max_azim < -M_PI || max_azim > M_PI) {
         throw std::invalid_argument("CropFovParams: max_azim must be in [-180, 180] deg.");
       }
       if (max_azim <= min_azim) {
         throw std::invalid_argument("CropFovParams: max_azim must be > min_azim.");
       }
-      if (off_azim < -180.0f || off_azim > 180.0f) {
+      if (off_azim < -M_PI || off_azim > M_PI) {
         throw std::invalid_argument("CropFovParams: off_azim must be in [-180, 180] deg.");
       }
       if (step_azim < 0.0f) {
         throw std::invalid_argument("CropFovParams: step_azim must be >= 0.");
       }
-      if (min_elev < -180.0f || min_elev > 180.0f) {
+      if (min_elev < -M_PI || min_elev > M_PI) {
         throw std::invalid_argument("CropFovParams: min_elev must be in [-180, 180] deg.");
       }
-      if (max_elev < -180.0f || max_elev > 180.0f) {
+      if (max_elev < -M_PI || max_elev > M_PI) {
         throw std::invalid_argument("CropFovParams: max_elev must be in [-180, 180] deg.");
       }
       if (max_elev <= min_elev) {
         throw std::invalid_argument("CropFovParams: max_elev must be > min_elev.");
       }
-      if (off_elev < -180.0f || off_elev > 180.0f) {
+      if (off_elev < -M_PI || off_elev > M_PI) {
         throw std::invalid_argument("CropFovParams: off_elev must be in [-180, 180] deg.");
       }
       if (step_elev < 0.0f) {
@@ -206,15 +206,15 @@ struct DUA_PCL_PUBLIC CropFovParams
     if (do_crop_fov) {
       oss << "- CropFovParams:\n"
           << "  - Azim (deg): "
-          << off_azim << " + ["
-          << min_azim << ", "
-          << max_azim << "] : "
-          << step_azim << "\n"
+          << dua_math::rad_to_deg(off_azim) << " + ["
+          << dua_math::rad_to_deg(min_azim) << ", "
+          << dua_math::rad_to_deg(max_azim) << "] : "
+          << dua_math::rad_to_deg(step_azim) << "\n"
           << "  - Elev (deg): "
-          << off_elev << " + ["
-          << min_elev << ", "
-          << max_elev << "] : "
-          << step_elev;
+          << dua_math::rad_to_deg(off_elev) << " + ["
+          << dua_math::rad_to_deg(min_elev) << ", "
+          << dua_math::rad_to_deg(max_elev) << "] : "
+          << dua_math::rad_to_deg(step_elev);
     } else {
       oss << "- CropFovParams: False";
     }
@@ -264,9 +264,9 @@ struct DUA_PCL_PUBLIC TransformParams
           << pos.y() << ", "
           << pos.z() << "), "
           << "rpy: ["
-          << rpy.x() * 180.0 / M_PI << ", "
-          << rpy.y() * 180.0 / M_PI << ", "
-          << rpy.z() * 180.0 / M_PI << "]";
+          << dua_math::rad_to_deg(rpy.x()) << ", "
+          << dua_math::rad_to_deg(rpy.y()) << ", "
+          << dua_math::rad_to_deg(rpy.z()) << "]";
     } else {
       oss << "- TransformParams: False";
     }
@@ -277,7 +277,7 @@ struct DUA_PCL_PUBLIC TransformParams
 struct DUA_PCL_PUBLIC DownsampleParams
 {
   bool do_downsample = false;
-  float leaf_size = 0.0f;  // [m]
+  float leaf_size = 0.0f; // [m]
   size_t min_points = 1u;
 
   DownsampleParams(
@@ -320,8 +320,8 @@ struct DUA_PCL_PUBLIC DownsampleParams
 struct DUA_PCL_PUBLIC RemoveGroundParams
 {
   bool do_remove_ground = false;
-  float eps_angle = 0.0f;  // [deg]
-  float dist_thres = 0.0f;  // [m]
+  float eps_angle = 0.0f;  // [rad]
+  float dist_thres = 0.0f; // [m]
 
   RemoveGroundParams(
     bool do_remove_ground = false,
@@ -337,7 +337,7 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
   void validate() const
   {
     if (do_remove_ground) {
-      if (eps_angle < 0.0f || eps_angle > 90.0f) {
+      if (eps_angle < 0.0f || eps_angle > M_PI_2) {
         throw std::invalid_argument("RemoveGroundParams: eps_angle must be in [0, 90] deg.");
       }
       if (dist_thres <= 0.0f) {
@@ -351,7 +351,7 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
     std::ostringstream oss;
     if (do_remove_ground) {
       oss << "- RemoveGroundParams:\n"
-          << "  - Eps angle (deg): " << eps_angle << "\n"
+          << "  - Eps angle (deg): " << dua_math::rad_to_deg(eps_angle) << "\n"
           << "  - Distance threshold (m): " << dist_thres;
     } else {
       oss << "- RemoveGroundParams: False";

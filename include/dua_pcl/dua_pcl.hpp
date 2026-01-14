@@ -77,17 +77,17 @@ template<typename PointT>
 template<typename PointT>
 [[nodiscard]] inline bool is_within_fov(
   const PointT & point,
-  float min_azim_rad, float max_azim_rad, float off_azim_rad,
-  float min_elev_rad, float max_elev_rad, float off_elev_rad) noexcept
+  float min_azim, float max_azim, float off_azim,
+  float min_elev, float max_elev, float off_elev) noexcept
 {
-  const float azim_rad = dua_math::normalize_angle(std::atan2(point.y, point.x) - off_azim_rad);
-  if (azim_rad < min_azim_rad || azim_rad > max_azim_rad) {
+  const float azim = dua_math::normalize_angle(std::atan2(point.y, point.x) - off_azim);
+  if (azim < min_azim || azim > max_azim) {
     return false;
   }
 
   const float planar = std::hypot(point.x, point.y);
-  const float elev_rad = dua_math::normalize_angle(std::atan2(point.z, planar) - off_elev_rad);
-  if (elev_rad < min_elev_rad || elev_rad > max_elev_rad) {
+  const float elev = dua_math::normalize_angle(std::atan2(point.z, planar) - off_elev);
+  if (elev < min_elev || elev > max_elev) {
     return false;
   }
 
@@ -180,18 +180,18 @@ void DUA_PCL_PUBLIC crop_fov_cloud(
     return;
   }
 
-  const float min_azim_rad = dua_math::deg_to_rad(crop_fov_params.min_azim);
-  const float max_azim_rad = dua_math::deg_to_rad(crop_fov_params.max_azim);
-  const float off_azim_rad = dua_math::deg_to_rad(crop_fov_params.off_azim);
-  const float min_elev_rad = dua_math::deg_to_rad(crop_fov_params.min_elev);
-  const float max_elev_rad = dua_math::deg_to_rad(crop_fov_params.max_elev);
-  const float off_elev_rad = dua_math::deg_to_rad(crop_fov_params.off_elev);
+  const float min_azim = crop_fov_params.min_azim;
+  const float max_azim = crop_fov_params.max_azim;
+  const float off_azim = crop_fov_params.off_azim;
+  const float min_elev = crop_fov_params.min_elev;
+  const float max_elev = crop_fov_params.max_elev;
+  const float off_elev = crop_fov_params.off_elev;
 
   std::size_t idx = 0;
   for (const auto & point : *cloud) {
     if (is_within_fov(point,
-      min_azim_rad, max_azim_rad, off_azim_rad,
-      min_elev_rad, max_elev_rad, off_elev_rad))
+          min_azim, max_azim, off_azim,
+          min_elev, max_elev, off_elev))
     {
       (*cloud)[idx++] = point;
     }
@@ -264,7 +264,7 @@ void DUA_PCL_PUBLIC remove_ground(
   seg.setMethodType(pcl::SAC_RANSAC);
   seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
   seg.setAxis(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
-  seg.setEpsAngle(dua_math::deg_to_rad(remove_ground_params.eps_angle));
+  seg.setEpsAngle(remove_ground_params.eps_angle);
   seg.setDistanceThreshold(remove_ground_params.dist_thres);
   seg.setMaxIterations(100);
   seg.setProbability(0.99);
@@ -308,12 +308,12 @@ void DUA_PCL_PUBLIC preprocess_cloud(
   const float half_len_y = params.crop_box_params.half_len_y;
   const float half_len_z = params.crop_box_params.half_len_z;
 
-  const float min_azim_rad = dua_math::deg_to_rad(params.crop_fov_params.min_azim);
-  const float max_azim_rad = dua_math::deg_to_rad(params.crop_fov_params.max_azim);
-  const float off_azim_rad = dua_math::deg_to_rad(params.crop_fov_params.off_azim);
-  const float min_elev_rad = dua_math::deg_to_rad(params.crop_fov_params.min_elev);
-  const float max_elev_rad = dua_math::deg_to_rad(params.crop_fov_params.max_elev);
-  const float off_elev_rad = dua_math::deg_to_rad(params.crop_fov_params.off_elev);
+  const float min_azim = params.crop_fov_params.min_azim;
+  const float max_azim = params.crop_fov_params.max_azim;
+  const float off_azim = params.crop_fov_params.off_azim;
+  const float min_elev = params.crop_fov_params.min_elev;
+  const float max_elev = params.crop_fov_params.max_elev;
+  const float off_elev = params.crop_fov_params.off_elev;
 
   Eigen::Matrix3f R = Eigen::Matrix3f::Identity();
   Eigen::Vector3f t = Eigen::Vector3f::Zero();
@@ -349,8 +349,8 @@ void DUA_PCL_PUBLIC preprocess_cloud(
 
     if (do_crop_fov &&
       !is_within_fov(point,
-        min_azim_rad, max_azim_rad, off_azim_rad,
-        min_elev_rad, max_elev_rad, off_elev_rad))
+        min_azim, max_azim, off_azim,
+        min_elev, max_elev, off_elev))
     {
       continue;
     }
