@@ -253,35 +253,20 @@ void DUA_PCL_PUBLIC remove_ground(
   typename pcl::PointCloud<PointT>::Ptr cloud,
   const RemoveGroundParams & remove_ground_params)
 {
-  if (!cloud || cloud->empty() || !remove_ground_params.do_remove_ground || cloud->size() <= 100) {
+  if (!cloud || cloud->empty() || !remove_ground_params.do_remove_ground) {
     return;
   }
 
-  pcl::SACSegmentation<PointT> seg;
-  pcl::PointIndices::Ptr ground(new pcl::PointIndices);
-  pcl::ModelCoefficients::Ptr coeffs(new pcl::ModelCoefficients);
+  const float dist_thr = remove_ground_params.dist_thr;
 
-  seg.setMethodType(pcl::SAC_RANSAC);
-  seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
-  seg.setAxis(Eigen::Vector3f(0.0f, 0.0f, 1.0f));
-  seg.setEpsAngle(remove_ground_params.eps_angle);
-  seg.setDistanceThreshold(remove_ground_params.dist_thres);
-  seg.setMaxIterations(100);
-  seg.setProbability(0.99);
-  seg.setOptimizeCoefficients(true);
-  seg.setInputCloud(cloud);
-  seg.segment(*ground, *coeffs);
-
-  if (!ground->indices.empty()) {
-    pcl::ExtractIndices<PointT> extract;
-    extract.setInputCloud(cloud);
-    extract.setIndices(ground);
-    extract.setNegative(true);
-
-    pcl::PointCloud<PointT> tmp;
-    extract.filter(tmp);
-    cloud->swap(tmp);
+  std::size_t idx = 0;
+  for (const auto & point : *cloud) {
+    if (point.z > dist_thr) {
+      (*cloud)[idx++] = point;
+    }
   }
+
+  resize_cloud<PointT>(cloud, idx);
 }
 
 template<typename PointT>

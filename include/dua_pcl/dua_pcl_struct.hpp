@@ -320,16 +320,13 @@ struct DUA_PCL_PUBLIC DownsampleParams
 struct DUA_PCL_PUBLIC RemoveGroundParams
 {
   bool do_remove_ground = false;
-  float eps_angle = 0.0f;  // [rad]
-  float dist_thres = 0.0f; // [m]
+  float dist_thr = 0.0f; // [m]
 
   RemoveGroundParams(
     bool do_remove_ground = false,
-    float eps_angle = 0.0f,
-    float dist_thres = 0.0f)
+    float dist_thr = 0.0f)
   : do_remove_ground(do_remove_ground),
-    eps_angle(eps_angle),
-    dist_thres(dist_thres)
+    dist_thr(dist_thr)
   {
     validate();
   }
@@ -337,11 +334,8 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
   void validate() const
   {
     if (do_remove_ground) {
-      if (eps_angle < 0.0f || eps_angle > M_PI_2) {
-        throw std::invalid_argument("RemoveGroundParams: eps_angle must be in [0, 90] deg.");
-      }
-      if (dist_thres <= 0.0f) {
-        throw std::invalid_argument("RemoveGroundParams: dist_thres must be > 0.");
+      if (dist_thr <= 0.0f) {
+        throw std::invalid_argument("RemoveGroundParams: dist_thr must be > 0.");
       }
     }
   }
@@ -351,8 +345,7 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
     std::ostringstream oss;
     if (do_remove_ground) {
       oss << "- RemoveGroundParams:\n"
-          << "  - Eps angle (deg): " << dua_math::rad_to_deg(eps_angle) << "\n"
-          << "  - Distance threshold (m): " << dist_thres;
+          << "  - Distance threshold (m): " << dist_thr;
     } else {
       oss << "- RemoveGroundParams: False";
     }
