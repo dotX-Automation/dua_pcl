@@ -334,8 +334,8 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
   void validate() const
   {
     if (do_remove_ground) {
-      if (dist_thr <= 0.0f) {
-        throw std::invalid_argument("RemoveGroundParams: dist_thr must be > 0.");
+      if (!std::isfinite(dist_thr)) {
+        throw std::invalid_argument("RemoveGroundParams: dist_thr must be finite");
       }
     }
   }
