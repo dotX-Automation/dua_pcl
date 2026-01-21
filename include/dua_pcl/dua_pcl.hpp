@@ -258,10 +258,13 @@ void DUA_PCL_PUBLIC remove_ground(
   }
 
   const float dist_thr = remove_ground_params.dist_thr;
+  const float eps_angle = remove_ground_params.eps_angle;
 
   std::size_t idx = 0;
   for (const auto & point : *cloud) {
-    if (point.z > dist_thr) {
+    const float radius = std::hypot(point.x, point.y);
+    const float thr = dist_thr + radius * std::tan(eps_angle);
+    if (point.z > thr) {
       (*cloud)[idx++] = point;
     }
   }

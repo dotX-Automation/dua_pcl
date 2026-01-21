@@ -321,12 +321,15 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
 {
   bool do_remove_ground = false;
   float dist_thr = 0.0f; // [m]
+  float eps_angle = 0.0f; // [deg]
 
   RemoveGroundParams(
     bool do_remove_ground = false,
-    float dist_thr = 0.0f)
+    float dist_thr = 0.0f,
+    float eps_angle = 0.0f)
   : do_remove_ground(do_remove_ground),
-    dist_thr(dist_thr)
+    dist_thr(dist_thr),
+    eps_angle(eps_angle)
   {
     validate();
   }
@@ -336,6 +339,9 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
     if (do_remove_ground) {
       if (!std::isfinite(dist_thr)) {
         throw std::invalid_argument("RemoveGroundParams: dist_thr must be finite");
+      }
+      if (eps_angle < -M_PI || eps_angle > M_PI) {
+        throw std::invalid_argument("RemoveGroundParams: eps_angle must be in [-180, 180] deg.");
       }
     }
   }
