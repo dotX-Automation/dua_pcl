@@ -28,7 +28,6 @@
 #include <dua_pcl/dua_pcl_struct.hpp>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/voxel_grid.h>
-#include <pcl/segmentation/sac_segmentation.h>
 #include <pcl_conversions/pcl_conversions.h>
 
 namespace dua_pcl
@@ -116,9 +115,9 @@ void DUA_PCL_PUBLIC clean_cloud(typename pcl::PointCloud<PointT>::Ptr cloud)
   }
 
   std::size_t idx = 0;
-  for (const auto & point : *cloud) {
+  for (const auto & point : cloud->points) {
     if (is_finite(point)) {
-      (*cloud)[idx++] = point;
+      cloud->points[idx++] = point;
     }
   }
 
@@ -139,9 +138,9 @@ void DUA_PCL_PUBLIC crop_sphere_cloud(
   const float max_range_sq = crop_sphere_params.max_range * crop_sphere_params.max_range;
 
   std::size_t idx = 0;
-  for (const auto & point : *cloud) {
+  for (const auto & point : cloud->points) {
     if (is_within_range_sq(point, min_range_sq, max_range_sq)) {
-      (*cloud)[idx++] = point;
+      cloud->points[idx++] = point;
     }
   }
 
@@ -162,9 +161,9 @@ void DUA_PCL_PUBLIC crop_box_cloud(
   const float half_len_z = crop_box_params.half_len_z;
 
   std::size_t idx = 0;
-  for (const auto & point : *cloud) {
+  for (const auto & point : cloud->points) {
     if (is_within_box(point, half_len_x, half_len_y, half_len_z)) {
-      (*cloud)[idx++] = point;
+      cloud->points[idx++] = point;
     }
   }
 
@@ -188,12 +187,12 @@ void DUA_PCL_PUBLIC crop_fov_cloud(
   const float off_elev = crop_fov_params.off_elev;
 
   std::size_t idx = 0;
-  for (const auto & point : *cloud) {
+  for (const auto & point : cloud->points) {
     if (is_within_fov(point,
           min_azim, max_azim, off_azim,
           min_elev, max_elev, off_elev))
     {
-      (*cloud)[idx++] = point;
+      cloud->points[idx++] = point;
     }
   }
 
@@ -219,7 +218,7 @@ void DUA_PCL_PUBLIC transform_cloud(
   Eigen::Matrix3f R = T.block<3, 3>(0, 0);
   Eigen::Vector3f t = T.block<3, 1>(0, 3);
 
-  for (auto & point : *cloud) {
+  for (auto & point : cloud->points) {
     transform_point(point, R, t);
   }
 }
@@ -261,11 +260,11 @@ void DUA_PCL_PUBLIC remove_ground(
   const float eps_angle = remove_ground_params.eps_angle;
 
   std::size_t idx = 0;
-  for (const auto & point : *cloud) {
+  for (const auto & point : cloud->points) {
     const float radius = std::hypot(point.x, point.y);
     const float thr = dist_thr + radius * std::tan(eps_angle);
     if (point.z > thr) {
-      (*cloud)[idx++] = point;
+      cloud->points[idx++] = point;
     }
   }
 
@@ -343,11 +342,11 @@ void DUA_PCL_PUBLIC preprocess_cloud(
       continue;
     }
 
-    auto & tmp = (*cloud)[idx++];
-    tmp = point;
+    cloud->points[idx] = point;
     if (do_transform) {
-      transform_point(tmp, R, t);
+      transform_point(cloud->points[idx], R, t);
     }
+    idx++;
   }
 
   resize_cloud<PointT>(cloud, idx);
