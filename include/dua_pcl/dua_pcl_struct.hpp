@@ -351,7 +351,8 @@ struct DUA_PCL_PUBLIC RemoveGroundParams
     std::ostringstream oss;
     if (do_remove_ground) {
       oss << "- RemoveGroundParams:\n"
-          << "  - Distance threshold (m): " << dist_thr;
+          << "  - Distance threshold (m): " << dist_thr << "\n"
+          << "  - Eps Angle (deg): " << dua_math::rad_to_deg(eps_angle);
     } else {
       oss << "- RemoveGroundParams: False";
     }
