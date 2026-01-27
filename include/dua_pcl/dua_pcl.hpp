@@ -1,5 +1,5 @@
 /**
- * DUA PCL
+ * DUA PCL library.
  *
  * dotX Automation <info@dotxautomation.com>
  *
@@ -25,14 +25,27 @@
 #pragma once
 
 #include <dua_math/dua_math.hpp>
+
 #include <dua_pcl/dua_pcl_struct.hpp>
+
 #include <pcl/filters/extract_indices.h>
 #include <pcl/filters/voxel_grid.h>
+
 #include <pcl_conversions/pcl_conversions.h>
 
 namespace dua_pcl
 {
 
+/**
+ * @brief Resizes a point cloud to a new size.
+ *
+ * Updates the cloud's size, width, and height properties. If the cloud is null,
+ * the function returns without performing any operation.
+ *
+ * @tparam PointT PCL point type.
+ * @param cloud Point cloud to resize.
+ * @param new_size New size for the point cloud.
+ */
 template<typename PointT>
 inline void resize_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
@@ -46,6 +59,13 @@ inline void resize_cloud(
   cloud->height = 1;
 }
 
+/**
+ * @brief Checks if a point has all finite coordinates.
+ *
+ * @tparam PointT PCL point type.
+ * @param point Point to check.
+ * @return True if x, y, and z coordinates are all finite, false otherwise.
+ */
 template<typename PointT>
 [[nodiscard]] inline bool is_finite(const PointT & point) noexcept
 {
@@ -54,6 +74,18 @@ template<typename PointT>
          std::isfinite(point.z);
 }
 
+/**
+ * @brief Checks if a point is within a spherical range.
+ *
+ * Evaluates whether the squared distance of the point from the origin is within
+ * the specified squared range bounds.
+ *
+ * @tparam PointT PCL point type.
+ * @param point Point to check.
+ * @param min_range_sq Minimum squared range [m²].
+ * @param max_range_sq Maximum squared range [m²].
+ * @return True if the point is within the specified range, false otherwise.
+ */
 template<typename PointT>
 [[nodiscard]] inline bool is_within_range_sq(
   const PointT & point,
@@ -63,6 +95,19 @@ template<typename PointT>
   return radius_sq >= min_range_sq && radius_sq <= max_range_sq;
 }
 
+/**
+ * @brief Checks if a point is within a box-shaped region.
+ *
+ * Evaluates whether the point lies within a box centered at the origin with
+ * specified half-lengths along each axis.
+ *
+ * @tparam PointT PCL point type.
+ * @param point Point to check.
+ * @param half_len_x Half-length of the box along the x-axis [m].
+ * @param half_len_y Half-length of the box along the y-axis [m].
+ * @param half_len_z Half-length of the box along the z-axis [m].
+ * @return True if the point is within the box, false otherwise.
+ */
 template<typename PointT>
 [[nodiscard]] inline bool is_within_box(
   const PointT & point,
@@ -73,6 +118,22 @@ template<typename PointT>
          -half_len_z <= point.z && point.z <= half_len_z;
 }
 
+/**
+ * @brief Checks if a point is within a field of view.
+ *
+ * Evaluates whether the point lies within azimuth and elevation angle bounds,
+ * accounting for angle offsets.
+ *
+ * @tparam PointT PCL point type.
+ * @param point Point to check.
+ * @param min_azim Minimum azimuth angle [rad].
+ * @param max_azim Maximum azimuth angle [rad].
+ * @param off_azim Azimuth angle offset [rad].
+ * @param min_elev Minimum elevation angle [rad].
+ * @param max_elev Maximum elevation angle [rad].
+ * @param off_elev Elevation angle offset [rad].
+ * @return True if the point is within the field of view, false otherwise.
+ */
 template<typename PointT>
 [[nodiscard]] inline bool is_within_fov(
   const PointT & point,
@@ -93,6 +154,16 @@ template<typename PointT>
   return true;
 }
 
+/**
+ * @brief Applies a rigid transformation to a point.
+ *
+ * Transforms the point using the provided rotation matrix and translation vector.
+ *
+ * @tparam PointT PCL point type.
+ * @param point Point to transform (modified in place).
+ * @param R 3x3 rotation matrix.
+ * @param t 3D translation vector [m].
+ */
 template<typename PointT>
 inline void transform_point(
   PointT & point,
@@ -107,6 +178,15 @@ inline void transform_point(
   point.z = R(2, 0) * x + R(2, 1) * y + R(2, 2) * z + t(2);
 }
 
+/**
+ * @brief Removes non-finite points from a point cloud.
+ *
+ * Filters out points with non-finite coordinates (NaN or Inf) and resizes the cloud.
+ * If the cloud is already marked as dense, no operation is performed.
+ *
+ * @tparam PointT PCL point type.
+ * @param cloud Point cloud to clean.
+ */
 template<typename PointT>
 void DUA_PCL_PUBLIC clean_cloud(typename pcl::PointCloud<PointT>::Ptr cloud)
 {
@@ -125,6 +205,15 @@ void DUA_PCL_PUBLIC clean_cloud(typename pcl::PointCloud<PointT>::Ptr cloud)
   cloud->is_dense = true;
 }
 
+/**
+ * @brief Crops a point cloud to a spherical region.
+ *
+ * Removes points outside the specified minimum and maximum range from the origin.
+ *
+ * @tparam PointT PCL point type.
+ * @param cloud Point cloud to crop.
+ * @param crop_sphere_params Spherical cropping parameters.
+ */
 template<typename PointT>
 void DUA_PCL_PUBLIC crop_sphere_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
@@ -147,6 +236,16 @@ void DUA_PCL_PUBLIC crop_sphere_cloud(
   resize_cloud<PointT>(cloud, idx);
 }
 
+/**
+ * @brief Crops a point cloud to a box-shaped region.
+ *
+ * Removes points outside the box defined by half-lengths along each axis,
+ * centered at the origin.
+ *
+ * @tparam PointT PCL point type.
+ * @param cloud Point cloud to crop.
+ * @param crop_box_params Box cropping parameters.
+ */
 template<typename PointT>
 void DUA_PCL_PUBLIC crop_box_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
@@ -170,6 +269,15 @@ void DUA_PCL_PUBLIC crop_box_cloud(
   resize_cloud<PointT>(cloud, idx);
 }
 
+/**
+ * @brief Crops a point cloud to a field of view.
+ *
+ * Removes points outside the specified azimuth and elevation angle bounds.
+ *
+ * @tparam PointT PCL point type.
+ * @param cloud Point cloud to crop.
+ * @param crop_fov_params Field of view cropping parameters.
+ */
 template<typename PointT>
 void DUA_PCL_PUBLIC crop_fov_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
@@ -199,6 +307,16 @@ void DUA_PCL_PUBLIC crop_fov_cloud(
   resize_cloud<PointT>(cloud, idx);
 }
 
+/**
+ * @brief Applies a rigid transformation to all points in a cloud.
+ *
+ * Transforms all points using the pose specified in the parameters and updates
+ * the cloud's frame ID and timestamp.
+ *
+ * @tparam PointT PCL point type.
+ * @param cloud Point cloud to transform.
+ * @param transform_params Transformation parameters.
+ */
 template<typename PointT>
 void DUA_PCL_PUBLIC transform_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
@@ -223,6 +341,16 @@ void DUA_PCL_PUBLIC transform_cloud(
   }
 }
 
+/**
+ * @brief Downsamples a point cloud using voxel grid filtering.
+ *
+ * Reduces the number of points by averaging points within voxels of specified size.
+ * Optionally enforces a minimum number of points per voxel.
+ *
+ * @tparam PointT PCL point type.
+ * @param cloud Point cloud to downsample.
+ * @param downsample_params Downsampling parameters.
+ */
 template<typename PointT>
 void DUA_PCL_PUBLIC downsample_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
@@ -247,6 +375,16 @@ void DUA_PCL_PUBLIC downsample_cloud(
   cloud->swap(tmp);
 }
 
+/**
+ * @brief Removes ground points from a point cloud.
+ *
+ * Filters out points below a height threshold that increases linearly with
+ * horizontal distance, assuming a flat ground plane.
+ *
+ * @tparam PointT PCL point type.
+ * @param cloud Point cloud to filter.
+ * @param remove_ground_params Ground removal parameters.
+ */
 template<typename PointT>
 void DUA_PCL_PUBLIC remove_ground(
   typename pcl::PointCloud<PointT>::Ptr cloud,
@@ -271,6 +409,17 @@ void DUA_PCL_PUBLIC remove_ground(
   resize_cloud<PointT>(cloud, idx);
 }
 
+/**
+ * @brief Applies a complete preprocessing pipeline to a point cloud.
+ *
+ * Performs multiple operations in a single pass for efficiency: cleaning,
+ * cropping (sphere, box, and field of view), transformation, downsampling,
+ * and ground removal, based on the provided parameters.
+ *
+ * @tparam PointT PCL point type.
+ * @param cloud Point cloud to preprocess.
+ * @param params Complete preprocessing parameters.
+ */
 template<typename PointT>
 void DUA_PCL_PUBLIC preprocess_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,

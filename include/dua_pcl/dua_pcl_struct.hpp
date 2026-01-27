@@ -1,5 +1,5 @@
 /**
- * DUA PCL structs
+ * DUA PCL structs definitions.
  *
  * dotX Automation <info@dotxautomation.com>
  *
@@ -25,7 +25,9 @@
 #pragma once
 
 #include <cstddef>
+
 #include <dua_pcl/visibility_control.h>
+
 #include <pose_kit/pose.hpp>
 
 namespace dua_pcl
