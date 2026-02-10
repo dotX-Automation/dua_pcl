@@ -49,7 +49,7 @@ namespace dua_pcl
 template<typename PointT>
 inline void resize_cloud(
   typename pcl::PointCloud<PointT>::Ptr cloud,
-  std::size_t new_size)
+  size_t new_size)
 {
   if (!cloud) {
     return;
@@ -69,9 +69,7 @@ inline void resize_cloud(
 template<typename PointT>
 [[nodiscard]] inline bool is_finite(const PointT & point) noexcept
 {
-  return std::isfinite(point.x) &&
-         std::isfinite(point.y) &&
-         std::isfinite(point.z);
+  return std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z);
 }
 
 /**
@@ -89,10 +87,11 @@ template<typename PointT>
 template<typename PointT>
 [[nodiscard]] inline bool is_within_range_sq(
   const PointT & point,
-  float min_range_sq, float max_range_sq) noexcept
+  float min_range_sq,
+  float max_range_sq) noexcept
 {
-  const float radius_sq = point.x * point.x + point.y * point.y + point.z * point.z;
-  return radius_sq >= min_range_sq && radius_sq <= max_range_sq;
+  const float radius_sq = (point.x * point.x) + (point.y * point.y) + (point.z * point.z);
+  return (radius_sq >= min_range_sq) && (radius_sq <= max_range_sq);
 }
 
 /**
@@ -111,11 +110,13 @@ template<typename PointT>
 template<typename PointT>
 [[nodiscard]] inline bool is_within_box(
   const PointT & point,
-  float half_len_x, float half_len_y, float half_len_z) noexcept
+  float half_len_x,
+  float half_len_y,
+  float half_len_z) noexcept
 {
-  return -half_len_x <= point.x && point.x <= half_len_x &&
-         -half_len_y <= point.y && point.y <= half_len_y &&
-         -half_len_z <= point.z && point.z <= half_len_z;
+  return (-half_len_x <= point.x) && (point.x <= half_len_x) &&
+         (-half_len_y <= point.y) && (point.y <= half_len_y) &&
+         (-half_len_z <= point.z) && (point.z <= half_len_z);
 }
 
 /**
@@ -137,17 +138,21 @@ template<typename PointT>
 template<typename PointT>
 [[nodiscard]] inline bool is_within_fov(
   const PointT & point,
-  float min_azim, float max_azim, float off_azim,
-  float min_elev, float max_elev, float off_elev) noexcept
+  float min_azim,
+  float max_azim,
+  float off_azim,
+  float min_elev,
+  float max_elev,
+  float off_elev) noexcept
 {
   const float azim = dua_math::normalize_angle(std::atan2(point.y, point.x) - off_azim);
-  if (azim < min_azim || azim > max_azim) {
+  if ((azim < min_azim) || (azim > max_azim)) {
     return false;
   }
 
   const float planar = std::hypot(point.x, point.y);
   const float elev = dua_math::normalize_angle(std::atan2(point.z, planar) - off_elev);
-  if (elev < min_elev || elev > max_elev) {
+  if ((elev < min_elev) || (elev > max_elev)) {
     return false;
   }
 
@@ -165,9 +170,21 @@ template<typename PointT>
  * @param t 3D translation vector [m].
  */
 template<typename PointT>
+[[nodiscard]] inline bool is_above_ground(
+  const PointT & point,
+  float dist_thr,
+  float eps_angle) noexcept
+{
+  const float radius = std::hypot(point.x, point.y);
+  const float thr = dist_thr + radius * std::tan(eps_angle);
+  return  point.z > thr;
+}
+
+template<typename PointT>
 inline void transform_point(
   PointT & point,
-  const Eigen::Matrix3f & R, const Eigen::Vector3f & t) noexcept
+  const Eigen::Matrix3f & R,
+  const Eigen::Vector3f & t) noexcept
 {
   const float x = point.x;
   const float y = point.y;
@@ -194,7 +211,7 @@ void DUA_PCL_PUBLIC clean_cloud(typename pcl::PointCloud<PointT>::Ptr cloud)
     return;
   }
 
-  std::size_t idx = 0;
+  size_t idx = 0;
   for (const auto & point : cloud->points) {
     if (is_finite(point)) {
       cloud->points[idx++] = point;
@@ -226,7 +243,7 @@ void DUA_PCL_PUBLIC crop_sphere_cloud(
   const float min_range_sq = crop_sphere_params.min_range * crop_sphere_params.min_range;
   const float max_range_sq = crop_sphere_params.max_range * crop_sphere_params.max_range;
 
-  std::size_t idx = 0;
+  size_t idx = 0;
   for (const auto & point : cloud->points) {
     if (is_within_range_sq(point, min_range_sq, max_range_sq)) {
       cloud->points[idx++] = point;
@@ -259,7 +276,7 @@ void DUA_PCL_PUBLIC crop_box_cloud(
   const float half_len_y = crop_box_params.half_len_y;
   const float half_len_z = crop_box_params.half_len_z;
 
-  std::size_t idx = 0;
+  size_t idx = 0;
   for (const auto & point : cloud->points) {
     if (is_within_box(point, half_len_x, half_len_y, half_len_z)) {
       cloud->points[idx++] = point;
@@ -294,12 +311,9 @@ void DUA_PCL_PUBLIC crop_fov_cloud(
   const float max_elev = crop_fov_params.max_elev;
   const float off_elev = crop_fov_params.off_elev;
 
-  std::size_t idx = 0;
+  size_t idx = 0;
   for (const auto & point : cloud->points) {
-    if (is_within_fov(point,
-          min_azim, max_azim, off_azim,
-          min_elev, max_elev, off_elev))
-    {
+    if (is_within_fov(point, min_azim, max_azim, off_azim, min_elev, max_elev, off_elev)) {
       cloud->points[idx++] = point;
     }
   }
@@ -397,11 +411,9 @@ void DUA_PCL_PUBLIC remove_ground(
   const float dist_thr = remove_ground_params.dist_thr;
   const float eps_angle = remove_ground_params.eps_angle;
 
-  std::size_t idx = 0;
+  size_t idx = 0;
   for (const auto & point : cloud->points) {
-    const float radius = std::hypot(point.x, point.y);
-    const float thr = dist_thr + radius * std::tan(eps_angle);
-    if (point.z > thr) {
+    if (is_above_ground(point, dist_thr, eps_angle)) {
       cloud->points[idx++] = point;
     }
   }
@@ -430,26 +442,28 @@ void DUA_PCL_PUBLIC preprocess_cloud(
   }
 
   const bool do_clean = !cloud->is_dense;
-  const bool do_crop_sphere = params.crop_sphere_params.do_crop_sphere;
-  const bool do_crop_box = params.crop_box_params.do_crop_box;
-  const bool do_crop_fov = params.crop_fov_params.do_crop_fov;
+
+  const auto & crop_sphere_params = params.crop_sphere_params;
+  const bool do_crop_sphere = crop_sphere_params.do_crop_sphere;
+  const float min_range_sq = crop_sphere_params.min_range * crop_sphere_params.min_range;
+  const float max_range_sq = crop_sphere_params.max_range * crop_sphere_params.max_range;
+
+  const auto & crop_box_params = params.crop_box_params;
+  const bool do_crop_box = crop_box_params.do_crop_box;
+  const float half_len_x = crop_box_params.half_len_x;
+  const float half_len_y = crop_box_params.half_len_y;
+  const float half_len_z = crop_box_params.half_len_z;
+
+  const auto & crop_fov_params = params.crop_fov_params;
+  const bool do_crop_fov = crop_fov_params.do_crop_fov;
+  const float min_azim = crop_fov_params.min_azim;
+  const float max_azim = crop_fov_params.max_azim;
+  const float off_azim = crop_fov_params.off_azim;
+  const float min_elev = crop_fov_params.min_elev;
+  const float max_elev = crop_fov_params.max_elev;
+  const float off_elev = crop_fov_params.off_elev;
+
   const bool do_transform = params.transform_params.do_transform;
-
-  const float min_range_sq =
-    params.crop_sphere_params.min_range * params.crop_sphere_params.min_range;
-  const float max_range_sq =
-    params.crop_sphere_params.max_range * params.crop_sphere_params.max_range;
-
-  const float half_len_x = params.crop_box_params.half_len_x;
-  const float half_len_y = params.crop_box_params.half_len_y;
-  const float half_len_z = params.crop_box_params.half_len_z;
-
-  const float min_azim = params.crop_fov_params.min_azim;
-  const float max_azim = params.crop_fov_params.max_azim;
-  const float off_azim = params.crop_fov_params.off_azim;
-  const float min_elev = params.crop_fov_params.min_elev;
-  const float max_elev = params.crop_fov_params.max_elev;
-  const float off_elev = params.crop_fov_params.off_elev;
 
   Eigen::Matrix3f R = Eigen::Matrix3f::Identity();
   Eigen::Vector3f t = Eigen::Vector3f::Zero();
@@ -465,28 +479,22 @@ void DUA_PCL_PUBLIC preprocess_cloud(
     t = T.block<3, 1>(0, 3);
   }
 
-  std::size_t idx = 0;
+  size_t idx = 0;
   for (const auto & point : cloud->points) {
     if (do_clean && !is_finite(point)) {
       continue;
     }
 
-    if (do_crop_sphere &&
-      !is_within_range_sq(point, min_range_sq, max_range_sq))
-    {
+    if (do_crop_sphere && !is_within_range_sq(point, min_range_sq, max_range_sq)) {
       continue;
     }
 
-    if (do_crop_box &&
-      !is_within_box(point, half_len_x, half_len_y, half_len_z))
-    {
+    if (do_crop_box && !is_within_box(point, half_len_x, half_len_y, half_len_z)) {
       continue;
     }
 
     if (do_crop_fov &&
-      !is_within_fov(point,
-        min_azim, max_azim, off_azim,
-        min_elev, max_elev, off_elev))
+      !is_within_fov(point, min_azim, max_azim, off_azim, min_elev, max_elev, off_elev))
     {
       continue;
     }
