@@ -227,15 +227,12 @@ struct DUA_PCL_PUBLIC CropFovParams
 struct DUA_PCL_PUBLIC TransformParams
 {
   bool do_transform = false;
-  std::string frame_id = "";
   pose_kit::Pose pose = pose_kit::Pose();
 
   TransformParams(
     bool do_transform = false,
-    const std::string & frame_id = "",
     const pose_kit::Pose & pose = pose_kit::Pose())
   : do_transform(do_transform),
-    frame_id(frame_id),
     pose(pose)
   {
     validate();
@@ -244,8 +241,11 @@ struct DUA_PCL_PUBLIC TransformParams
   void validate() const
   {
     if (do_transform) {
-      if (frame_id.empty()) {
-        throw std::invalid_argument("TransformParams: frame_id must be non-empty.");
+      if (pose.parent_frame_id().empty()) {
+        throw std::invalid_argument("TransformParams: parent_frame_id must be non-empty.");
+      }
+      if (pose.child_frame_id().empty()) {
+        throw std::invalid_argument("TransformParams: child_frame_id must be non-empty.");
       }
     }
   }
@@ -259,8 +259,8 @@ struct DUA_PCL_PUBLIC TransformParams
       Eigen::Vector3d rpy;
       pose.get_rpy(rpy);
       oss << "- TransformParams:\n"
-          << "  - Frame ID: " << frame_id << "\n"
-          << "  - Pose: " << pose.header().frame_id << " @ "
+          << "  - Parent Frame ID: " << pose.parent_frame_id() << "\n"
+          << "  - Child Frame ID: " << pose.child_frame_id() << "\n"
           << "xyz: ("
           << pos.x() << ", "
           << pos.y() << ", "

@@ -341,15 +341,20 @@ void DUA_PCL_PUBLIC transform_cloud(
   }
 
   const pose_kit::Pose & pose = transform_params.pose;
-  pose.get_frame_id(cloud->header.frame_id);
-  cloud->header.stamp = pose.get_timestamp_us();
+  std::string source_frame_id = pose.child_frame_id();
+  const std::string & curr_parent_frame_id = cloud->header.frame_id;
+  if (curr_parent_frame_id != source_frame_id) {
+    throw std::invalid_argument(
+        "transform_cloud: pose child_frame_id '" + source_frame_id +
+        "' does not match cloud frame_id '" + curr_parent_frame_id);
+  }
+  cloud->header.frame_id = pose.parent_frame_id();
 
   Eigen::Isometry3d iso;
   pose.get_isometry(iso);
   Eigen::Matrix4f T = iso.matrix().cast<float>();
   Eigen::Matrix3f R = T.block<3, 3>(0, 0);
   Eigen::Vector3f t = T.block<3, 1>(0, 3);
-
   for (auto & point : cloud->points) {
     transform_point(point, R, t);
   }
@@ -469,8 +474,14 @@ void DUA_PCL_PUBLIC preprocess_cloud(
   Eigen::Vector3f t = Eigen::Vector3f::Zero();
   if (do_transform) {
     const pose_kit::Pose & pose = params.transform_params.pose;
-    pose.get_frame_id(cloud->header.frame_id);
-    cloud->header.stamp = pose.get_timestamp_us();
+    std::string source_frame_id = pose.child_frame_id();
+    const std::string & curr_parent_frame_id = cloud->header.frame_id;
+    if (curr_parent_frame_id != source_frame_id) {
+      throw std::invalid_argument(
+        "preprocess_cloud: pose child_frame_id '" + source_frame_id +
+        "' does not match cloud frame_id '" + curr_parent_frame_id);
+    }
+    cloud->header.frame_id = pose.parent_frame_id();
 
     Eigen::Isometry3d iso;
     pose.get_isometry(iso);
